@@ -1,0 +1,3248 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeachBot – Advanced Self-Learning Rule-Based Chatbot</title>
+    <!-- Tailwind CSS CDN for responsive ChatGPT-style utility layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    colors: {
+                        gpt: {
+                            sidebar: '#171717',
+                            main: '#212121',
+                            card: '#2f2f2f',
+                            hover: '#2a2b32',
+                            border: '#383838',
+                            accent: '#10a37f',
+                            accentHover: '#0d8a6a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style id="teachbot-custom-styles">
+        /* Custom Scrollbars & Animations */
+        :root {
+            --bg-sidebar: #171717;
+            --bg-main: #212121;
+            --bg-card: #2f2f2f;
+            --text-primary: #ececec;
+            --text-secondary: #b4b4b4;
+            --border-color: #383838;
+            --accent: #10a37f;
+        }
+        html.light {
+            --bg-sidebar: #f3f4f6;
+            --bg-main: #ffffff;
+            --bg-card: #f9fafb;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --border-color: #e5e7eb;
+            --accent: #10a37f;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.3);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.5);
+        }
+        /* Typing Indicator Dots */
+        .typing-dot {
+            animation: typingBounce 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        /* Message Entrance Animation */
+        .msg-animate {
+            animation: fadeInSlide 0.22s ease-out forwards;
+        }
+        @keyframes fadeInSlide {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Pulse ring for active teaching mode */
+        .teach-pulse {
+            box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5);
+            animation: pulseAmber 2s infinite;
+        }
+        @keyframes pulseAmber {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
+            70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex overflow-hidden select-none sm:select-text bg-[#212121] dark:bg-[#212121] text-gray-100 transition-colors duration-200">
+
+    <!-- MOBILE SIDEBAR BACKDROP -->
+    <div id="sidebar-backdrop" onclick="toggleMobileSidebar(false)" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden backdrop-blur-xs transition-opacity"></div>
+
+    <!-- LEFT SIDEBAR (ChatGPT Style) -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-72 bg-[#171717] text-gray-200 flex flex-col border-r border-[#2e2e2e] transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out shrink-0">
+        
+        <!-- Top Brand + New Chat Button -->
+        <div class="p-3 space-y-2 border-b border-[#2a2a2a]">
+            <div class="flex items-center justify-between px-2 py-1">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold shadow-md shadow-emerald-900/40">
+                        <i class="fa-solid fa-brain text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
+                            TeachBot
+                            <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Rule-Engine</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400">100% Offline Self-Learning</p>
+                    </div>
+                </div>
+                <button onclick="toggleMobileSidebar(false)" class="md:hidden text-gray-400 hover:text-white p-1.5 rounded-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <button onclick="createNewChat()" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-[#262626] hover:bg-[#303030] border border-[#383838] text-sm font-medium text-white transition group">
+                <span class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-plus text-emerald-400 group-hover:rotate-90 transition-transform"></i>
+                    New Conversation
+                </span>
+                <kbd class="text-[10px] font-mono bg-[#171717] text-gray-400 px-1.5 py-0.5 rounded border border-[#333]">Alt+N</kbd>
+            </button>
+        </div>
+
+        <!-- Navigation Modes -->
+        <div class="px-3 pt-2.5 pb-1">
+            <div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-2 mb-1.5">Workspace</div>
+            <nav class="space-y-1">
+                <button onclick="switchView('chat')" id="nav-chat" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 transition">
+                    <span class="flex items-center gap-2.5"><i class="fa-regular fa-comments w-4 text-center"></i> Chat Interface</span>
+                    <span id="nav-badge-context" class="hidden text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">Ctx</span>
+                </button>
+                <button onclick="switchView('knowledge')" id="nav-knowledge" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-gray-300 hover:bg-[#262626] transition">
+                    <span class="flex items-center gap-2.5"><i class="fa-solid fa-database w-4 text-center text-amber-400"></i> Knowledge Dashboard</span>
+                    <span id="sidebar-kb-count" class="text-[10px] bg-[#262626] text-gray-300 px-1.5 py-0.5 rounded-full font-mono border border-[#383838]">0</span>
+                </button>
+                <button onclick="switchView('memory')" id="nav-memory" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-gray-300 hover:bg-[#262626] transition">
+                    <span class="flex items-center gap-2.5"><i class="fa-solid fa-user-check w-4 text-center text-purple-400"></i> User Memory & Facts</span>
+                    <span id="sidebar-mem-count" class="text-[10px] bg-[#262626] text-gray-300 px-1.5 py-0.5 rounded-full font-mono border border-[#383838]">0</span>
+                </button>
+                <button onclick="switchView('settings')" id="nav-settings" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-gray-300 hover:bg-[#262626] transition">
+                    <span class="flex items-center gap-2.5"><i class="fa-solid fa-sliders w-4 text-center text-sky-400"></i> Engine & Settings</span>
+                </button>
+                <button onclick="switchView('source')" id="nav-source" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-gray-300 hover:bg-[#262626] transition">
+                    <span class="flex items-center gap-2.5"><i class="fa-solid fa-file-code w-4 text-center text-pink-400"></i> Export Source Files</span>
+                    <span class="text-[10px] bg-pink-500/20 text-pink-300 px-1.5 py-0.5 rounded font-mono">4 Files</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Chat History Search & List -->
+        <div class="px-3 pt-3 pb-1 flex items-center justify-between">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-2">Chat History</span>
+            <button onclick="clearAllChatsConfirm()" title="Clear All Conversations (Keeps Knowledge)" class="text-[11px] text-gray-500 hover:text-red-400 px-1.5 py-0.5 rounded transition">
+                Clear All
+            </button>
+        </div>
+        <div class="px-3 mb-2">
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-gray-500 text-xs"></i>
+                <input id="chat-search-input" oninput="renderChatList()" type="text" placeholder="Filter conversations..." class="w-full bg-[#222] text-xs text-gray-200 pl-8 pr-2.5 py-1.5 rounded-lg border border-[#333] focus:outline-none focus:border-emerald-500">
+            </div>
+        </div>
+
+        <div id="chat-history-list" class="flex-1 overflow-y-auto px-2 space-y-1">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Bottom Status Footer -->
+        <div class="p-3 border-t border-[#2a2a2a] bg-[#141414] space-y-2">
+            <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-gray-300 font-medium">Offline Rule Engine</span>
+                </div>
+                <button onclick="openTeachModal()" class="text-[11px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-medium transition">
+                    <i class="fa-solid fa-graduation-cap mr-1"></i>+ Teach
+                </button>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-gray-400">
+                <span id="footer-user-label"><i class="fa-regular fa-user mr-1"></i>Guest User</span>
+                <span id="footer-learned-badge" class="font-mono text-emerald-400">0 taught</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#212121] relative">
+        
+        <!-- TOP HEADER BAR -->
+        <header class="h-14 border-b border-[#303030] bg-[#1b1b1b]/90 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-20">
+            <div class="flex items-center gap-3 min-w-0">
+                <button onclick="toggleMobileSidebar(true)" class="md:hidden text-gray-300 hover:text-white p-2 rounded-lg bg-[#2a2a2a]">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <h1 id="current-view-title" class="font-semibold text-sm sm:text-base text-white truncate">TeachBot Conversation</h1>
+                        <span id="active-context-pill" class="hidden sm:inline-flex items-center gap-1 text-[11px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                            <i class="fa-solid fa-link text-[9px]"></i>
+                            Topic: <strong id="active-context-name">None</strong>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Controls: Personality Selector & Quick Actions -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Personality Quick Switcher -->
+                <div class="flex items-center bg-[#282828] border border-[#3a3a3a] rounded-lg px-2 py-1">
+                    <i id="personality-icon" class="fa-solid fa-face-smile text-emerald-400 text-xs mr-1.5"></i>
+                    <label for="header-personality-select" class="sr-only">Personality</label>
+                    <select id="header-personality-select" onchange="changePersonality(this.value)" class="bg-transparent text-xs font-medium text-gray-200 focus:outline-none cursor-pointer pr-1">
+                        <option value="friendly" class="bg-[#212121]">Friendly</option>
+                        <option value="professional" class="bg-[#212121]">Professional</option>
+                        <option value="funny" class="bg-[#212121]">Funny</option>
+                        <option value="casual" class="bg-[#212121]">Casual</option>
+                        <option value="sarcastic" class="bg-[#212121]">Sarcastic</option>
+                        <option value="educational" class="bg-[#212121]">Educational</option>
+                    </select>
+                </div>
+
+                <!-- Quick Teach Button -->
+                <button onclick="openTeachModal()" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-medium transition">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span>Teach Bot</span>
+                </button>
+
+                <!-- Clear Current Chat -->
+                <button onclick="clearCurrentChatMessages()" title="Clear messages in current chat" class="p-2 rounded-lg bg-[#282828] hover:bg-[#333] text-gray-300 hover:text-white border border-[#383838] text-xs transition">
+                    <i class="fa-solid fa-broom"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- ========================================================== -->
+        <!-- VIEW 1: CHAT INTERFACE                                     -->
+        <!-- ========================================================== -->
+        <main id="view-chat" class="flex-1 flex flex-col overflow-hidden relative">
+            
+            <!-- Active Teaching Mode Banner (Shown when Bot is waiting for user to teach an answer) -->
+            <div id="teaching-mode-banner" class="hidden bg-amber-500/15 border-b border-amber-500/40 px-4 py-2.5 flex items-center justify-between gap-2 text-xs text-amber-200 z-10">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400 teach-pulse shrink-0"></span>
+                    <span class="truncate">
+                        <strong>Teaching Mode Active:</strong> Reply directly with the answer for <em id="teaching-banner-question" class="text-white font-semibold">""</em> or click Skip.
+                    </span>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button onclick="openTeachModalWithPending()" class="px-2 py-1 rounded bg-amber-500/30 hover:bg-amber-500/40 text-amber-100 font-medium transition">
+                        Advanced Options
+                    </button>
+                    <button onclick="cancelPendingTeach()" class="px-2 py-1 rounded bg-black/30 hover:bg-black/50 text-gray-300 transition">
+                        Cancel / Skip
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scrollable Messages Stream -->
+            <div id="chat-messages-container" class="flex-1 overflow-y-auto px-3 sm:px-6 py-6 space-y-6">
+                <!-- Populated dynamically by renderMessages() -->
+            </div>
+
+            <!-- Bottom Input Bar -->
+            <div class="p-3 sm:p-4 bg-gradient-to-t from-[#181818] via-[#212121] to-transparent">
+                <div class="max-w-3xl mx-auto">
+                    <!-- Quick Suggested Chips -->
+                    <div id="quick-suggestions-bar" class="flex items-center gap-1.5 overflow-x-auto pb-2 no-scrollbar">
+                        <button onclick="sendSuggestedPrompt('Who is Elon Musk?')" class="shrink-0 text-[11px] bg-[#2a2a2a] hover:bg-[#343434] text-gray-300 border border-[#3a3a3a] px-2.5 py-1 rounded-full transition flex items-center gap-1">
+                            <i class="fa-solid fa-bolt text-amber-400 text-[10px]"></i> Who is Elon Musk?
+                        </button>
+                        <button onclick="sendSuggestedPrompt('What companies does he own?')" class="shrink-0 text-[11px] bg-[#2a2a2a] hover:bg-[#343434] text-gray-300 border border-[#3a3a3a] px-2.5 py-1 rounded-full transition flex items-center gap-1">
+                            <i class="fa-solid fa-link text-emerald-400 text-[10px]"></i> What companies does he own? (Context)
+                        </button>
+                        <button onclick="sendSuggestedPrompt('Who is the founder of Microsoft?')" class="shrink-0 text-[11px] bg-[#2a2a2a] hover:bg-[#343434] text-gray-300 border border-[#3a3a3a] px-2.5 py-1 rounded-full transition">
+                            Who is the founder of Microsoft?
+                        </button>
+                        <button onclick="sendSuggestedPrompt('What is the capital of Mars?')" class="shrink-0 text-[11px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-full transition">
+                            <i class="fa-solid fa-graduation-cap mr-1"></i>Test Unknown Question
+                        </button>
+                        <button onclick="sendSuggestedPrompt('My name is Gary')" class="shrink-0 text-[11px] bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2.5 py-1 rounded-full transition">
+                            <i class="fa-solid fa-user-tag mr-1"></i>"My name is Gary"
+                        </button>
+                    </div>
+
+                    <!-- Input Box -->
+                    <form id="chat-form" onsubmit="handleChatSubmit(event)" class="relative bg-[#2f2f2f] border border-[#424242] focus-within:border-emerald-500/70 rounded-2xl shadow-lg transition">
+                        <textarea 
+                            id="chat-input" 
+                            rows="1"
+                            placeholder="Ask TeachBot anything, or teach me a new fact..."
+                            onkeydown="handleInputKeydown(event)"
+                            oninput="autoResizeTextarea(this)"
+                            class="w-full bg-transparent text-sm text-white placeholder-gray-400 pl-4 pr-24 py-3.5 focus:outline-none resize-none max-h-40 overflow-y-auto"
+                        ></textarea>
+                        <div class="absolute right-2.5 bottom-2 flex items-center gap-1.5">
+                            <button type="button" onclick="openTeachModal()" title="Open Teach Modal" class="p-2 rounded-xl text-gray-400 hover:text-amber-400 hover:bg-[#3a3a3a] transition">
+                                <i class="fa-solid fa-graduation-cap text-sm"></i>
+                            </button>
+                            <button type="submit" id="send-btn" class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center shadow transition disabled:opacity-40">
+                                <i class="fa-solid fa-arrow-up text-sm"></i>
+                            </button>
+                        </div>
+                    </form>
+                    <div class="flex items-center justify-between px-2 pt-1.5 text-[11px] text-gray-400">
+                        <span>100% Rule-Based JS Engine • Zero AI APIs • Works Offline</span>
+                        <span id="engine-last-match-info" class="font-mono text-gray-400">Ready</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ========================================================== -->
+        <!-- VIEW 2: KNOWLEDGE MANAGEMENT DASHBOARD                     -->
+        <!-- ========================================================== -->
+        <section id="view-knowledge" class="hidden flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+            <div class="max-w-6xl mx-auto space-y-6">
+                
+                <!-- Header & Action Buttons -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#2a2a2a] p-5 rounded-2xl border border-[#383838]">
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-database text-amber-400"></i>
+                            Knowledge Management Dashboard
+                        </h2>
+                        <p class="text-xs sm:text-sm text-gray-400 mt-1">
+                            Add, edit, categorize, import, or export your chatbot's permanent rule-based knowledge database.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="openTeachModal()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-2 shadow transition">
+                            <i class="fa-solid fa-plus"></i> Add Knowledge Entry
+                        </button>
+                        <button onclick="triggerImportFile()" class="px-3.5 py-2 rounded-xl bg-[#363636] hover:bg-[#424242] text-gray-200 border border-[#4a4a4a] text-xs font-medium flex items-center gap-2 transition">
+                            <i class="fa-solid fa-file-import text-amber-400"></i> Import JSON / TXT
+                        </button>
+                        <input type="file" id="kb-import-file" accept=".json,.txt" class="hidden" onchange="handleKnowledgeFileImport(event)">
+                        <div class="relative group">
+                            <button onclick="exportKnowledgeDatabase('json')" class="px-3.5 py-2 rounded-xl bg-[#363636] hover:bg-[#424242] text-gray-200 border border-[#4a4a4a] text-xs font-medium flex items-center gap-2 transition">
+                                <i class="fa-solid fa-file-export text-sky-400"></i> Export JSON
+                            </button>
+                        </div>
+                        <button onclick="exportKnowledgeDatabase('txt')" class="px-3 py-2 rounded-xl bg-[#363636] hover:bg-[#424242] text-gray-200 border border-[#4a4a4a] text-xs font-medium flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-file-lines text-gray-400"></i> Export TXT
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Metrics Cards -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <div class="bg-[#2a2a2a] border border-[#383838] rounded-xl p-4">
+                        <div class="text-xs text-gray-400">Total Knowledge Entries</div>
+                        <div id="stat-total-entries" class="text-2xl font-bold text-white mt-1 font-mono">0</div>
+                        <div class="text-[11px] text-emerald-400 mt-1">Active rules in memory</div>
+                    </div>
+                    <div class="bg-[#2a2a2a] border border-[#383838] rounded-xl p-4">
+                        <div class="text-xs text-gray-400">Question Variations</div>
+                        <div id="stat-total-questions" class="text-2xl font-bold text-amber-400 mt-1 font-mono">0</div>
+                        <div class="text-[11px] text-gray-400 mt-1">Primary + alternatives</div>
+                    </div>
+                    <div class="bg-[#2a2a2a] border border-[#383838] rounded-xl p-4">
+                        <div class="text-xs text-gray-400">Total Answers Stored</div>
+                        <div id="stat-total-answers" class="text-2xl font-bold text-sky-400 mt-1 font-mono">0</div>
+                        <div class="text-[11px] text-gray-400 mt-1">Multi-response pool</div>
+                    </div>
+                    <div class="bg-[#2a2a2a] border border-[#383838] rounded-xl p-4">
+                        <div class="text-xs text-gray-400">Taught by You</div>
+                        <div id="stat-user-taught" class="text-2xl font-bold text-purple-400 mt-1 font-mono">0</div>
+                        <div class="text-[11px] text-gray-400 mt-1">Saved in localStorage</div>
+                    </div>
+                    <div class="bg-[#2a2a2a] border border-[#383838] rounded-xl p-4 col-span-2 sm:col-span-1">
+                        <div class="text-xs text-gray-400">Categories</div>
+                        <div id="stat-categories" class="text-2xl font-bold text-pink-400 mt-1 font-mono">0</div>
+                        <div class="text-[11px] text-gray-400 mt-1">Organized domains</div>
+                    </div>
+                </div>
+
+                <!-- Search & Filter Bar -->
+                <div class="flex flex-col sm:flex-row gap-3 bg-[#2a2a2a] p-4 rounded-xl border border-[#383838]">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-gray-400 text-xs"></i>
+                        <input id="kb-search-input" oninput="renderKnowledgeTable()" type="text" placeholder="Search questions, alternative phrasings, answers, entities, or keywords..." class="w-full bg-[#1e1e1e] text-xs sm:text-sm text-white pl-9 pr-4 py-2 rounded-lg border border-[#3a3a3a] focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <select id="kb-category-filter" onchange="renderKnowledgeTable()" class="bg-[#1e1e1e] text-xs sm:text-sm text-gray-200 px-3 py-2 rounded-lg border border-[#3a3a3a] focus:outline-none focus:border-emerald-500">
+                        <option value="all">All Categories</option>
+                    </select>
+                    <select id="kb-source-filter" onchange="renderKnowledgeTable()" class="bg-[#1e1e1e] text-xs sm:text-sm text-gray-200 px-3 py-2 rounded-lg border border-[#3a3a3a] focus:outline-none focus:border-emerald-500">
+                        <option value="all">All Sources (Built-in + Taught)</option>
+                        <option value="user">Taught by User Only</option>
+                        <option value="builtin">Built-in Starter DB Only</option>
+                    </select>
+                </div>
+
+                <!-- Knowledge Entries List -->
+                <div id="kb-entries-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Populated by renderKnowledgeTable() -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================== -->
+        <!-- VIEW 3: USER MEMORY & CONVERSATION CONTEXT                 -->
+        <!-- ========================================================== -->
+        <section id="view-memory" class="hidden flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+            <div class="max-w-4xl mx-auto space-y-6">
+                <div class="bg-[#2a2a2a] p-5 rounded-2xl border border-[#383838] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-user-check text-purple-400"></i>
+                            Personal Memory & Conversation Context
+                        </h2>
+                        <p class="text-xs sm:text-sm text-gray-400 mt-1">
+                            TeachBot automatically remembers your name, preferences, and facts you share in chat (e.g., "My name is Gary", "I love astronomy").
+                        </p>
+                    </div>
+                    <button onclick="resetUserMemoryConfirm()" class="px-3.5 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 text-xs font-medium shrink-0 transition">
+                        <i class="fa-solid fa-trash-can mr-1.5"></i>Reset Memory
+                    </button>
+                </div>
+
+                <!-- Profile & Custom Instructions Card -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-[#2a2a2a] p-5 rounded-2xl border border-[#383838] space-y-4">
+                        <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-id-card text-emerald-400"></i> Stored Identity & Profile
+                        </h3>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Your Name (Say "My name is ..." in chat or edit here)</label>
+                            <div class="flex gap-2">
+                                <input id="mem-user-name" type="text" placeholder="Not set yet (e.g., Gary)" class="flex-1 bg-[#1d1d1d] text-sm text-white px-3 py-2 rounded-lg border border-[#3a3a3a] focus:outline-none focus:border-emerald-500">
+                                <button onclick="saveUserMemoryProfile()" class="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">Save</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Custom Response Instructions / Bot Prefix</label>
+                            <textarea id="mem-custom-instructions" rows="2" placeholder="e.g., Always call me Captain or keep answers concise..." class="w-full bg-[#1d1d1d] text-xs text-white p-2.5 rounded-lg border border-[#3a3a3a] focus:outline-none focus:border-emerald-500"></textarea>
+                            <button onclick="saveUserMemoryProfile()" class="mt-1.5 px-3 py-1.5 rounded-lg bg-[#383838] hover:bg-[#444] text-gray-200 text-xs transition">Update Instructions</button>
+                        </div>
+                    </div>
+
+                    <!-- Active Pronoun / Entity Context State -->
+                    <div class="bg-[#2a2a2a] p-5 rounded-2xl border border-[#383838] space-y-3">
+                        <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-diagram-project text-amber-400"></i> Active Conversation Context Tracker
+                        </h3>
+                        <p class="text-xs text-gray-400">
+                            Used to resolve pronouns like <code class="text-emerald-300">he, she, it, they, that, there</code> in follow-up questions.
+                        </p>
+                        <div class="bg-[#1d1d1d] p-3.5 rounded-xl border border-[#333] space-y-2 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Current Subject Entity:</span>
+                                <span id="mem-context-entity" class="font-mono font-semibold text-emerald-400">None</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Last Matched Category:</span>
+                                <span id="mem-context-category" class="font-mono text-gray-200">None</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Last Matched Question ID:</span>
+                                <span id="mem-context-qid" class="font-mono text-gray-400">None</span>
+                            </div>
+                        </div>
+                        <div class="text-[11px] text-gray-400 bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-lg">
+                            <strong>Try it in Chat:</strong> Ask <em>"Who is Elon Musk?"</em> then follow up with <em>"What companies does he own?"</em>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Learned Personal Facts & Preferences List -->
+                <div class="bg-[#2a2a2a] p-5 rounded-2xl border border-[#383838] space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-bookmark text-purple-400"></i> Remembered User Facts & Preferences
+                        </h3>
+                        <div class="flex gap-2">
+                            <input id="new-user-fact-key" type="text" placeholder="Topic (e.g. Favorite Food)" class="bg-[#1d1d1d] text-xs text-white px-2.5 py-1.5 rounded-lg border border-[#3a3a3a]">
+                            <input id="new-user-fact-val" type="text" placeholder="Value (e.g. Pizza)" class="bg-[#1d1d1d] text-xs text-white px-2.5 py-1.5 rounded-lg border border-[#3a3a3a]">
+                            <button onclick="addManualUserFact()" class="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium shrink-0 transition">+ Add Fact</button>
+                        </div>
+                    </div>
+                    <div id="user-facts-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <!-- Populated by renderMemoryView() -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================== -->
+        <!-- VIEW 4: ENGINE & PERSONALITY SETTINGS                      -->
+        <!-- ========================================================== -->
+        <section id="view-settings" class="hidden flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+            <div class="max-w-3xl mx-auto space-y-6">
+                <div class="bg-[#2a2a2a] p-5 rounded-2xl border border-[#383838]">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-sky-400"></i>
+                        Rule Engine & Interface Settings
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-1">Configure matching sensitivity, automatic teaching prompts, personality styles, and database backups.</p>
+                </div>
+
+                <!-- Personality Cards -->
+                <div class="bg-[#2a2a2a] p-5 rounded-2xl border border-[#383838] space-y-3">
+                    <h3 class="text-sm font-semibold text-white">Select Bot Personality</h3>
+                    <div id="settings-personality-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Rule Engine Toggles -->
+                <div class="bg-[#2a2a2a] p-5 rounded-2xl border border-[#383838] space-y-4">
+                    <h3 class="text-sm font-semibold text-white">Matching & Learning Behavior</h3>
+                    
+                    <div class="flex items-center justify-between py-2 border-b border-[#383838]">
+                        <div>
+                            <div class="text-sm font-medium text-white">Automatic Conversational Teaching Mode</div>
+                            <div class="text-xs text-gray-400">When TeachBot doesn't know an answer, let the next reply directly teach it.</div>
+                        </div>
+                        <input type="checkbox" id="setting-auto-teach" onchange="updateSettingsFromUI()" class="w-5 h-5 accent-emerald-500 rounded cursor-pointer">
+                    </div>
+
+                    <div class="flex items-center justify-between py-2 border-b border-[#383838]">
+                        <div>
+                            <div class="text-sm font-medium text-white">Show Rule Match Diagnostic Badges</div>
+                            <div class="text-xs text-gray-400">Display whether a reply came from Exact Match, Synonym, Fuzzy, Context, or Memory.</div>
+                        </div>
+                        <input type="checkbox" id="setting-show-badges" onchange="updateSettingsFromUI()" class="w-5 h-5 accent-emerald-500 rounded cursor-pointer">
+                    </div>
+
+                    <div class="flex items-center justify-between py-2 border-b border-[#383838]">
+                        <div>
+                            <div class="text-sm font-medium text-white">Simulated Typing Animation</div>
+                            <div class="text-xs text-gray-400">Show a natural ChatGPT-style typing delay before presenting answers.</div>
+                        </div>
+                        <input type="checkbox" id="setting-typing-anim" onchange="updateSettingsFromUI()" class="w-5 h-5 accent-emerald-500 rounded cursor-pointer">
+                    </div>
+
+                    <div class="flex items-center justify-between py-2 border-b border-[#383838]">
+                        <div>
+                            <div class="text-sm font-medium text-white">Light Theme Mode</div>
+                            <div class="text-xs text-gray-400">Switch between default ChatGPT Dark UI and high-contrast Light mode.</div>
+                        </div>
+                        <input type="checkbox" id="setting-light-mode" onchange="updateSettingsFromUI()" class="w-5 h-5 accent-emerald-500 rounded cursor-pointer">
+                    </div>
+
+                    <div class="pt-2">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-300 font-medium">Fuzzy & Keyword Confidence Threshold</span>
+                            <span id="setting-threshold-label" class="font-mono text-emerald-400">0.58 (Balanced)</span>
+                        </div>
+                        <input type="range" id="setting-fuzzy-threshold" min="0.35" max="0.85" step="0.05" onchange="updateSettingsFromUI()" class="w-full accent-emerald-500 cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-gray-500">
+                            <span>Forgiving (More Fuzzy Matches)</span>
+                            <span>Strict (Exact/High Overlap Only)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Database Reset & Maintenance -->
+                <div class="bg-[#2a2a2a] p-5 rounded-2xl border border-[#383838] space-y-3">
+                    <h3 class="text-sm font-semibold text-white">Database Backup & Factory Reset</h3>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="exportKnowledgeDatabase('json')" class="px-4 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-medium transition">
+                            <i class="fa-solid fa-download mr-1.5"></i>Backup Full Knowledge JSON
+                        </button>
+                        <button onclick="resetKnowledgeToFactoryConfirm()" class="px-4 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 text-xs font-medium transition">
+                            <i class="fa-solid fa-rotate-left mr-1.5"></i>Restore Starter Knowledge DB
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================== -->
+        <!-- VIEW 5: EXPORT SEPARATE SOURCE CODE FILES                  -->
+        <!-- ========================================================== -->
+        <section id="view-source" class="hidden flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+            <div class="max-w-5xl mx-auto space-y-4">
+                <div class="bg-[#2a2a2a] p-5 rounded-2xl border border-[#383838] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-file-code text-pink-400"></i>
+                            Modular Project Architecture Files
+                        </h2>
+                        <p class="text-xs text-gray-400 mt-1">
+                            Download or copy the clean 4-file modular architecture (<code class="text-pink-300">index.html</code>, <code class="text-pink-300">style.css</code>, <code class="text-pink-300">script.js</code>, and <code class="text-pink-300">knowledge.json</code>) to run locally in any folder.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="downloadSelectedSourceFile()" class="px-3.5 py-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-download"></i> Download Current File
+                        </button>
+                        <button onclick="copySelectedSourceFile()" class="px-3.5 py-2 rounded-xl bg-[#383838] hover:bg-[#444] text-gray-200 text-xs font-medium flex items-center gap-1.5 transition">
+                            <i class="fa-regular fa-copy"></i> Copy Code
+                        </button>
+                    </div>
+                </div>
+
+                <!-- File Tabs -->
+                <div class="flex items-center gap-2 border-b border-[#383838] pb-2 overflow-x-auto">
+                    <button onclick="selectSourceTab('index.html')" id="src-tab-index.html" class="px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium bg-emerald-600/20 text-emerald-300 border border-emerald-500/30">1. index.html</button>
+                    <button onclick="selectSourceTab('style.css')" id="src-tab-style.css" class="px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium bg-[#2a2a2a] text-gray-400 hover:text-white">2. style.css</button>
+                    <button onclick="selectSourceTab('script.js')" id="src-tab-script.js" class="px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium bg-[#2a2a2a] text-gray-400 hover:text-white">3. script.js</button>
+                    <button onclick="selectSourceTab('knowledge.json')" id="src-tab-knowledge.json" class="px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium bg-[#2a2a2a] text-gray-400 hover:text-white">4. knowledge.json</button>
+                </div>
+
+                <div class="bg-[#161616] border border-[#333] rounded-2xl overflow-hidden">
+                    <div class="bg-[#222] px-4 py-2 border-b border-[#333] flex items-center justify-between text-xs font-mono text-gray-400">
+                        <span id="source-viewer-filename">index.html</span>
+                        <span id="source-viewer-size">0 KB</span>
+                    </div>
+                    <pre id="source-viewer-code" class="p-4 text-xs font-mono text-gray-300 overflow-x-auto max-h-[60vh] leading-relaxed select-all"></pre>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- MODAL: ADD / EDIT / TEACH KNOWLEDGE                        -->
+    <!-- ========================================================== -->
+    <div id="teach-modal" class="fixed inset-0 bg-black/75 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xs">
+        <div class="bg-[#262626] border border-[#404040] rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="px-5 py-4 border-b border-[#383838] flex items-center justify-between bg-[#1f1f1f]">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <h3 id="teach-modal-title" class="text-sm sm:text-base font-bold text-white">Teach TeachBot New Knowledge</h3>
+                        <p class="text-[11px] text-gray-400">Saved permanently in your browser's offline knowledge database</p>
+                    </div>
+                </div>
+                <button onclick="closeTeachModal()" class="text-gray-400 hover:text-white p-1.5 rounded-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="teach-modal-form" onsubmit="saveTeachModalForm(event)" class="p-5 overflow-y-auto space-y-4 text-xs sm:text-sm">
+                <input type="hidden" id="teach-entry-id">
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Primary Question / Trigger Phrase *</label>
+                    <input id="teach-primary-question" type="text" required placeholder="e.g., What is the capital of France?" class="w-full bg-[#1a1a1a] text-white px-3.5 py-2.5 rounded-xl border border-[#3a3a3a] focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">
+                        Alternative Ways of Asking <span class="text-gray-400 font-normal">(One per line – recognized as the same entry)</span>
+                    </label>
+                    <textarea id="teach-alt-questions" rows="3" placeholder="Tell me the capital of France&#10;France capital city?&#10;What city is the capital of France?" class="w-full bg-[#1a1a1a] text-white p-3 rounded-xl border border-[#3a3a3a] focus:outline-none focus:border-emerald-500 font-mono text-xs"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">
+                        Bot Answer(s) * <span class="text-gray-400 font-normal">(One per line – if multiple lines are provided, TeachBot picks a variation)</span>
+                    </label>
+                    <textarea id="teach-answers" rows="3" required placeholder="The capital of France is Paris.&#10;Paris is the capital and largest city of France." class="w-full bg-[#1a1a1a] text-white p-3 rounded-xl border border-[#3a3a3a] focus:outline-none focus:border-emerald-500"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Category</label>
+                        <select id="teach-category" class="w-full bg-[#1a1a1a] text-white px-3 py-2 rounded-xl border border-[#3a3a3a] focus:outline-none focus:border-emerald-500">
+                            <option value="General Knowledge">General Knowledge</option>
+                            <option value="Science">Science</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Geography">Geography</option>
+                            <option value="History">History</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Sports">Sports</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Computers">Computers</option>
+                            <option value="Programming">Programming</option>
+                            <option value="Everyday Conversations">Everyday Conversations</option>
+                            <option value="Custom">Custom</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1" title="Allows follow-up questions with pronouns like he, she, it, they">Subject Entity (Context)</label>
+                        <input id="teach-entity" type="text" placeholder="e.g., France, Elon Musk" class="w-full bg-[#1a1a1a] text-white px-3 py-2 rounded-xl border border-[#3a3a3a] focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Priority (1 - 10)</label>
+                        <input id="teach-priority" type="number" min="1" max="10" value="6" class="w-full bg-[#1a1a1a] text-white px-3 py-2 rounded-xl border border-[#3a3a3a] focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Keywords (comma separated)</label>
+                        <input id="teach-keywords" type="text" placeholder="capital, france, paris" class="w-full bg-[#1a1a1a] text-white px-3 py-2 rounded-xl border border-[#3a3a3a] focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Optional Regex Pattern</label>
+                        <input id="teach-regex" type="text" placeholder="e.g., ^(what|tell me).*capital of france" class="w-full bg-[#1a1a1a] text-white px-3 py-2 rounded-xl border border-[#3a3a3a] focus:outline-none focus:border-emerald-500 font-mono text-xs">
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-[#383838] flex items-center justify-end gap-2">
+                    <button type="button" onclick="closeTeachModal()" class="px-4 py-2 rounded-xl bg-[#383838] hover:bg-[#444] text-gray-200 text-xs font-medium transition">Cancel</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow transition">
+                        <i class="fa-solid fa-check mr-1.5"></i>Save Knowledge Permanently
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- CUSTOM CONFIRMATION MODAL (No window.confirm/alert)        -->
+    <!-- ========================================================== -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black/75 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xs">
+        <div class="bg-[#262626] border border-[#404040] rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 id="confirm-modal-title" class="text-base font-bold text-white">Confirm Action</h3>
+            </div>
+            <p id="confirm-modal-desc" class="text-xs sm:text-sm text-gray-300 leading-relaxed"></p>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl bg-[#383838] hover:bg-[#444] text-gray-200 text-xs font-medium">Cancel</button>
+                <button id="confirm-modal-action-btn" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ========================================================== -->
+    <!-- CORE APPLICATION JAVASCRIPT (100% Rule-Based Offline NLP)  -->
+    <!-- ========================================================== -->
+    <script id="teachbot-core-script">
+        /********************************************************************
+         * 1. BUILT-IN STARTER KNOWLEDGE DATABASE (JSON-structured)
+         * Covers 11 required categories, alternative questions, multi-answers,
+         * entity tracking (Elon Musk -> he follow-up), and regex patterns.
+         ********************************************************************/
+        const STARTER_KNOWLEDGE_DB = [
+            // --- EVERYDAY CONVERSATIONS ---
+            {
+                id: "kb_greet_1",
+                question: "Hello",
+                altQuestions: ["Hi", "Hey", "Hey there", "Good morning", "Good afternoon", "Good evening", "Greetings", "Yo"],
+                answers: [
+                    "Hello! I'm TeachBot, your offline self-learning rule-based assistant. How can I help you today?",
+                    "Hi there! Ask me anything from my knowledge base, or teach me something new!",
+                    "Hey! Ready to chat or learn new facts. What's on your mind?"
+                ],
+                category: "Everyday Conversations",
+                keywords: ["hello", "hi", "hey", "greetings"],
+                entity: "",
+                priority: 9,
+                isUserTaught: false
+            },
+            {
+                id: "kb_conv_howareyou",
+                question: "How are you?",
+                altQuestions: ["How are you doing?", "How is it going?", "How do you feel?", "What's up?", "Are you doing well?"],
+                answers: [
+                    "All my JavaScript rule engines and localStorage databases are running at 100% efficiency! How are you doing?",
+                    "I'm doing great! Zero cloud APIs needed, just pure logic and ready to learn from you."
+                ],
+                category: "Everyday Conversations",
+                keywords: ["how", "doing", "going", "feel"],
+                entity: "",
+                priority: 8,
+                isUserTaught: false
+            },
+            {
+                id: "kb_conv_whoareyou",
+                question: "Who are you?",
+                altQuestions: ["What are you?", "What is your name?", "Tell me about yourself", "Are you ChatGPT?", "Are you an AI?"],
+                answers: [
+                    "I am TeachBot, an advanced self-learning rule-based chatbot built with HTML, CSS, and vanilla JavaScript. Unlike ChatGPT, I don't use any external AI APIs—I work 100% offline through pattern matching, fuzzy search, conversation context, and facts you teach me!",
+                    "I'm TeachBot! Think of me as a personal knowledge assistant that runs entirely offline in your browser and learns permanently whenever you teach me."
+                ],
+                category: "Everyday Conversations",
+                keywords: ["who", "what", "teachbot", "yourself", "ai", "chatgpt"],
+                entity: "TeachBot",
+                priority: 9,
+                isUserTaught: false
+            },
+            {
+                id: "kb_conv_capabilities",
+                question: "How do I teach you?",
+                altQuestions: ["Can I teach you?", "How do you learn?", "How does TeachBot work?", "What can you do?"],
+                answers: [
+                    "You can teach me in two ways: 1) Ask me any question I don't know and simply reply with the answer (or click 'Teach Me'), or 2) Open the Knowledge Dashboard in the sidebar to add questions, alternative phrasings, categories, and multiple answers!"
+                ],
+                category: "Everyday Conversations",
+                keywords: ["teach", "learn", "work", "capabilities"],
+                entity: "TeachBot",
+                priority: 8,
+                isUserTaught: false
+            },
+            {
+                id: "kb_conv_thanks",
+                question: "Thank you",
+                altQuestions: ["Thanks", "Thanks a lot", "Appreciate it", "Thank you so much", "Ty"],
+                answers: [
+                    "You're very welcome! Let me know if you want to explore more topics or teach me a new rule.",
+                    "Happy to help! Anytime you want to expand my knowledge base, I'm right here."
+                ],
+                category: "Everyday Conversations",
+                keywords: ["thank", "thanks", "appreciate"],
+                entity: "",
+                priority: 8,
+                isUserTaught: false
+            },
+            {
+                id: "kb_conv_bye",
+                question: "Goodbye",
+                altQuestions: ["Bye", "See you later", "Talk to you later", "Good night", "Cya"],
+                answers: [
+                    "Goodbye! Everything you taught me is safely stored in localStorage for next time.",
+                    "See you later! Come back anytime to test my memory or teach me new facts."
+                ],
+                category: "Everyday Conversations",
+                keywords: ["goodbye", "bye", "later", "night"],
+                entity: "",
+                priority: 8,
+                isUserTaught: false
+            },
+
+            // --- TECHNOLOGY & ELON MUSK CONTEXT FOLLOW-UP DEMO ---
+            {
+                id: "kb_tech_elon",
+                question: "Who is Elon Musk?",
+                altQuestions: ["Tell me about Elon Musk", "What is Elon Musk known for?", "Elon Musk biography", "Who's Elon Musk?"],
+                answers: [
+                    "Elon Musk is a billionaire entrepreneur and business magnate known for leading several major technology and aerospace ventures.",
+                    "Elon Musk is an entrepreneur and innovator who co-founded and leads multiple high-profile technology companies."
+                ],
+                category: "Technology",
+                keywords: ["elon", "musk", "entrepreneur"],
+                entity: "Elon Musk",
+                priority: 9,
+                isUserTaught: false
+            },
+            {
+                id: "kb_tech_elon_companies",
+                question: "What companies does Elon Musk own?",
+                altQuestions: [
+                    "What companies does Elon Musk run?",
+                    "Which companies is Elon Musk associated with?",
+                    "Elon Musk companies",
+                    "What companies did Elon Musk start?",
+                    "What companies does he own?"
+                ],
+                answers: [
+                    "Elon Musk is associated with companies such as Tesla, SpaceX, X (formerly Twitter), Neuralink, xAI, and The Boring Company."
+                ],
+                category: "Technology",
+                keywords: ["companies", "elon", "musk", "own", "run", "tesla", "spacex"],
+                entity: "Elon Musk",
+                priority: 9,
+                isUserTaught: false
+            },
+            {
+                id: "kb_tech_elon_networth",
+                question: "Where was Elon Musk born?",
+                altQuestions: ["Where is Elon Musk from?", "Elon Musk birthplace"],
+                answers: [
+                    "Elon Musk was born in Pretoria, South Africa, on June 28, 1971."
+                ],
+                category: "Technology",
+                keywords: ["where", "elon", "musk", "born", "from"],
+                entity: "Elon Musk",
+                priority: 8,
+                isUserTaught: false
+            },
+            {
+                id: "kb_tech_microsoft",
+                question: "Who created Microsoft?",
+                altQuestions: [
+                    "Who is the founder of Microsoft?",
+                    "Who started Microsoft?",
+                    "Microsoft founder name?",
+                    "Who founded Microsoft?"
+                ],
+                answers: [
+                    "Bill Gates and Paul Allen founded Microsoft on April 4, 1975.",
+                    "Microsoft was created by Bill Gates and Paul Allen."
+                ],
+                category: "Technology",
+                keywords: ["microsoft", "founder", "created", "started", "bill", "gates", "paul", "allen"],
+                entity: "Microsoft",
+                priority: 9,
+                isUserTaught: false
+            },
+            {
+                id: "kb_tech_microsoft_hq",
+                question: "Where is Microsoft headquartered?",
+                altQuestions: ["Where is Microsoft located?", "Microsoft headquarters city"],
+                answers: [
+                    "Microsoft is headquartered in Redmond, Washington, United States."
+                ],
+                category: "Technology",
+                keywords: ["microsoft", "headquartered", "located", "headquarters"],
+                entity: "Microsoft",
+                priority: 7,
+                isUserTaught: false
+            },
+            {
+                id: "kb_tech_apple",
+                question: "Who founded Apple?",
+                altQuestions: ["Who created Apple?", "Who started Apple Computer?", "Apple founders"],
+                answers: [
+                    "Apple was founded by Steve Jobs, Steve Wozniak, and Ronald Wayne in April 1976."
+                ],
+                category: "Technology",
+                keywords: ["apple", "founded", "created", "steve", "jobs", "wozniak"],
+                entity: "Apple",
+                priority: 8,
+                isUserTaught: false
+            },
+
+            // --- GEOGRAPHY ---
+            {
+                id: "kb_geo_japan",
+                question: "What is the capital of Japan?",
+                altQuestions: ["Tell me the capital of Japan", "Japan capital city", "What city is the capital of Japan?"],
+                answers: [
+                    "The capital of Japan is Tokyo.",
+                    "Tokyo is the capital and largest metropolitan area of Japan."
+                ],
+                category: "Geography",
+                keywords: ["capital", "japan", "tokyo"],
+                entity: "Japan",
+                priority: 8,
+                isUserTaught: false
+            },
+            {
+                id: "kb_geo_australia",
+                question: "What is the capital of Australia?",
+                altQuestions: ["Tell me the capital of Australia", "Australia capital city"],
+                answers: [
+                    "The capital of Australia is Canberra (not Sydney or Melbourne!)."
+                ],
+                category: "Geography",
+                keywords: ["capital", "australia", "canberra"],
+                entity: "Australia",
+                priority: 8,
+                isUserTaught: false
+            },
+            {
+                id: "kb_geo_everest",
+                question: "What is the highest mountain in the world?",
+                altQuestions: ["Tallest mountain on Earth", "What is the tallest mountain?", "How tall is Mount Everest?"],
+                answers: [
+                    "Mount Everest is the highest mountain in the world above sea level, standing at 8,848.86 meters (29,031.7 feet) in the Himalayas."
+                ],
+                category: "Geography",
+                keywords: ["highest", "tallest", "mountain", "world", "everest"],
+                entity: "Mount Everest",
+                priority: 7,
+                isUserTaught: false
+            },
+            {
+                id: "kb_geo_oceans",
+                question: "What is the largest ocean on Earth?",
+                altQuestions: ["Biggest ocean in the world", "Name the largest ocean"],
+                answers: [
+                    "The Pacific Ocean is the largest and deepest ocean on Earth, covering more than 30% of the planet's surface."
+                ],
+                category: "Geography",
+                keywords: ["largest", "biggest", "ocean", "earth", "pacific"],
+                entity: "Pacific Ocean",
+                priority: 7,
+                isUserTaught: false
+            },
+
+            // --- SCIENCE ---
+            {
+                id: "kb_sci_light",
+                question: "What is the speed of light?",
+                altQuestions: ["How fast does light travel?", "Speed of light in vacuum"],
+                answers: [
+                    "The speed of light in a vacuum is approximately 299,792,458 meters per second (about 300,000 km/s or 186,282 miles per second)."
+                ],
+                category: "Science",
+                keywords: ["speed", "light", "fast", "vacuum"],
+                entity: "Speed of Light",
+                priority: 8,
+                isUserTaught: false
+            },
+            {
+                id: "kb_sci_water",
+                question: "What is the chemical formula for water?",
+                altQuestions: ["Water chemical formula", "What is H2O?", "Chemical symbol for water"],
+                answers: [
+                    "The chemical formula for water is H2O, meaning each molecule consists of two hydrogen atoms bonded to one oxygen atom."
+                ],
+                category: "Science",
+                keywords: ["chemical", "formula", "water", "h2o"],
+                entity: "Water",
+                priority: 8,
+                isUserTaught: false
+            },
+            {
+                id: "kb_sci_planets",
+                question: "How many planets are in the Solar System?",
+                altQuestions: ["List the planets in our solar system", "What are the 8 planets?"],
+                answers: [
+                    "There are 8 official planets in our Solar System: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune."
+                ],
+                category: "Science",
+                keywords: ["planets", "solar", "system", "many"],
+                entity: "Solar System",
+                priority: 8,
+                isUserTaught: false
+            },
+            {
+                id: "kb_sci_dna",
+                question: "What does DNA stand for?",
+                altQuestions: ["Full form of DNA", "What is DNA?"],
+                answers: [
+                    "DNA stands for Deoxyribonucleic Acid. It carries the genetic instructions for the development and functioning of all known living organisms."
+                ],
+                category: "Science",
+                keywords: ["dna", "stand", "deoxyribonucleic"],
+                entity: "DNA",
+                priority: 7,
+                isUserTaught: false
+            },
+
+            // --- COMPUTERS & PROGRAMMING ---
+            {
+                id: "kb_prog_js",
+                question: "What is JavaScript?",
+                altQuestions: ["Tell me about JavaScript", "What is JS used for?", "Who created JavaScript?"],
+                answers: [
+                    "JavaScript (JS) is a high-level, dynamic programming language created by Brendan Eich in 1995. It is the core language of the web for interactive client-side behavior—and it powers 100% of TeachBot!"
+                ],
+                category: "Programming",
+                keywords: ["javascript", "js", "programming", "language"],
+                entity: "JavaScript",
+                priority: 8,
+                isUserTaught: false
+            },
+            {
+                id: "kb_prog_python",
+                question: "What is Python?",
+                altQuestions: ["Who created Python?", "Tell me about Python programming language"],
+                answers: [
+                    "Python is a popular, high-level programming language created by Guido van Rossum and first released in 1991. It emphasizes code readability and is widely used in web development, data science, and automation."
+                ],
+                category: "Programming",
+                keywords: ["python", "guido", "programming"],
+                entity: "Python",
+                priority: 8,
+                isUserTaught: false
+            },
+            {
+                id: "kb_comp_cpu",
+                question: "What does CPU stand for?",
+                altQuestions: ["Full form of CPU", "What is a CPU in a computer?"],
+                answers: [
+                    "CPU stands for Central Processing Unit. It acts as the primary 'brain' of a computer, executing instructions from programs."
+                ],
+                category: "Computers",
+                keywords: ["cpu", "central", "processing", "unit", "computer"],
+                entity: "CPU",
+                priority: 8,
+                isUserTaught: false
+            },
+            {
+                id: "kb_comp_html",
+                question: "What does HTML stand for?",
+                altQuestions: ["Full form of HTML", "What is HTML?"],
+                answers: [
+                    "HTML stands for HyperText Markup Language. It is the standard markup language used to structure content on the World Wide Web."
+                ],
+                category: "Computers",
+                keywords: ["html", "hypertext", "markup"],
+                entity: "HTML",
+                priority: 8,
+                isUserTaught: false
+            },
+
+            // --- HISTORY ---
+            {
+                id: "kb_hist_ww2",
+                question: "When did World War II end?",
+                altQuestions: ["What year did WW2 end?", "When did the Second World War finish?"],
+                answers: [
+                    "World War II ended in 1945 (with Victory in Europe Day on May 8, 1945, and Japan's formal surrender on September 2, 1945)."
+                ],
+                category: "History",
+                keywords: ["world", "war", "ii", "ww2", "end", "1945"],
+                entity: "World War II",
+                priority: 7,
+                isUserTaught: false
+            },
+            {
+                id: "kb_hist_moon",
+                question: "Who was the first person to walk on the Moon?",
+                altQuestions: ["First man on the moon", "When did Apollo 11 land on the moon?"],
+                answers: [
+                    "Neil Armstrong became the first person to walk on the Moon on July 20, 1969, during NASA's Apollo 11 mission, followed shortly by Buzz Aldrin."
+                ],
+                category: "History",
+                keywords: ["first", "person", "walk", "moon", "neil", "armstrong", "apollo"],
+                entity: "Neil Armstrong",
+                priority: 8,
+                isUserTaught: false
+            },
+
+            // --- MATHEMATICS ---
+            {
+                id: "kb_math_pi",
+                question: "What is the value of Pi?",
+                altQuestions: ["What is Pi in math?", "Digits of Pi"],
+                answers: [
+                    "Pi (π) is the ratio of a circle's circumference to its diameter, approximately equal to 3.14159265359."
+                ],
+                category: "Mathematics",
+                keywords: ["value", "pi", "math", "circle", "3.14"],
+                entity: "Pi",
+                priority: 8,
+                isUserTaught: false
+            },
+            {
+                id: "kb_math_pythagoras",
+                question: "What is the Pythagorean theorem?",
+                altQuestions: ["Explain Pythagoras theorem", "Formula for a right triangle"],
+                answers: [
+                    "The Pythagorean theorem states that in a right-angled triangle, the square of the hypotenuse (c) is equal to the sum of the squares of the other two sides: a² + b² = c²."
+                ],
+                category: "Mathematics",
+                keywords: ["pythagorean", "pythagoras", "theorem", "triangle"],
+                entity: "Pythagorean Theorem",
+                priority: 7,
+                isUserTaught: false
+            },
+
+            // --- SPORTS & ENTERTAINMENT & GENERAL KNOWLEDGE ---
+            {
+                id: "kb_sport_wc",
+                question: "How many players are on a soccer team?",
+                altQuestions: ["How many players in a football team on the field?", "Number of players in soccer"],
+                answers: [
+                    "A standard soccer (association football) team has 11 players on the field at one time, including the goalkeeper."
+                ],
+                category: "Sports",
+                keywords: ["players", "soccer", "football", "team", "11"],
+                entity: "Soccer",
+                priority: 7,
+                isUserTaught: false
+            },
+            {
+                id: "kb_ent_chess",
+                question: "How many squares are on a chessboard?",
+                altQuestions: ["Total squares on a chess board", "Chessboard size"],
+                answers: [
+                    "There are 64 squares on a standard chessboard, arranged in an 8x8 grid of alternating light and dark squares."
+                ],
+                category: "Entertainment",
+                keywords: ["squares", "chessboard", "chess", "64"],
+                entity: "Chess",
+                priority: 7,
+                isUserTaught: false
+            },
+            {
+                id: "kb_gen_continents",
+                question: "How many continents are there?",
+                altQuestions: ["Name the 7 continents", "What are the continents of the world?"],
+                answers: [
+                    "There are 7 continents on Earth: Asia, Africa, North America, South America, Antarctica, Europe, and Australia (Oceania)."
+                ],
+                category: "General Knowledge",
+                keywords: ["continents", "seven", "world", "earth"],
+                entity: "Continents",
+                priority: 8,
+                isUserTaught: false
+            }
+        ];
+
+        /********************************************************************
+         * 2. SYNONYM & NORMALIZATION DICTIONARY
+         * Helps match equivalent words & phrasings without any AI model.
+         ********************************************************************/
+        const SYNONYM_MAP = {
+            "founder": "creator",
+            "founded": "creator",
+            "started": "creator",
+            "created": "creator",
+            "built": "creator",
+            "invented": "creator",
+            "maker": "creator",
+            "father": "creator",
+            "ceo": "leader",
+            "owns": "own",
+            "runs": "own",
+            "manages": "own",
+            "associated": "own",
+            "businesses": "companies",
+            "corporations": "companies",
+            "firms": "companies",
+            "biggest": "largest",
+            "tallest": "highest",
+            "quick": "fast",
+            "velocity": "speed",
+            "automobile": "car",
+            "soccer": "football",
+            "programme": "program",
+            "colour": "color",
+            "favourite": "favorite",
+            "tell": "what",
+            "explain": "what",
+            "describe": "what"
+        };
+
+        const STOP_WORDS = new Set([
+            "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
+            "in", "on", "at", "to", "for", "of", "with", "by", "about", "as",
+            "into", "like", "through", "after", "over", "between", "out", "against",
+            "during", "without", "before", "under", "around", "among", "please",
+            "can", "could", "would", "should", "you", "me", "my", "do", "does", "did"
+        ]);
+
+        /********************************************************************
+         * 3. PERSONALITY ENGINE DEFINITIONS
+         ********************************************************************/
+        const PERSONALITIES = {
+            friendly: {
+                name: "Friendly",
+                icon: "fa-face-smile",
+                desc: "Warm, encouraging, and helpful companion",
+                prefixPool: ["Happy to help! ", "Sure thing! ", "Great question! ", "Here's what I know: ", ""],
+                suffixPool: [" 😊", " Let me know if you'd like to know more!", ""],
+                unknownMsg: (q) => `I don't know the answer to "${q}" yet! 😊 Can you teach me? Just reply with the answer right here (or click "Teach Me" below, or type "skip").`,
+                learnedMsg: (q, a) => `Thank you so much! 🎉 I've permanently learned that for "${q}", the answer is: "${a}". Ask me again anytime!`
+            },
+            professional: {
+                name: "Professional",
+                icon: "fa-briefcase",
+                desc: "Clear, objective, concise, and formal",
+                prefixPool: ["According to my knowledge base: ", "Here is the requested information: ", ""],
+                suffixPool: [""],
+                unknownMsg: (q) => `No matching record was found in my database for "${q}". Please provide the correct answer to register this lesson, or click "Teach Me". Type "skip" to cancel.`,
+                learnedMsg: (q, a) => `Knowledge database updated. The entry "${q}" has been permanently indexed with the response: "${a}".`
+            },
+            funny: {
+                name: "Funny",
+                icon: "fa-face-laugh-squint",
+                desc: "Witty, lighthearted, and playful",
+                prefixPool: ["Hold onto your keyboard! ", "My JavaScript hamster wheel spun up this fact: ", "Boom! Knowledge incoming: ", ""],
+                suffixPool: [" (No AI harmed in the making of this answer!)", " 🤓", ""],
+                unknownMsg: (q) => `Uh oh, 404 Brain Cell Not Found for "${q}"! 🤣 My rule database has a blank spot there. Teach me the answer by replying directly (or hit "Teach Me")!`,
+                learnedMsg: (q, a) => `Level up! 🧠✨ I just tattooed "${a}" into my localStorage for "${q}". Try testing me now!`
+            },
+            casual: {
+                name: "Casual",
+                icon: "fa-mug-hot",
+                desc: "Relaxed, chill, everyday conversational vibe",
+                prefixPool: ["Oh yeah, ", "Basically, ", "Here's the deal: ", ""],
+                suffixPool: [" Pretty cool, right?", ""],
+                unknownMsg: (q) => `Honestly, I haven't learned "${q}" yet. Want to teach me? Just type the answer next, or type "skip" to move on.`,
+                learnedMsg: (q, a) => `Awesome, got it! Next time you ask about "${q}", I'll remember "${a}".`
+            },
+            sarcastic: {
+                name: "Sarcastic",
+                icon: "fa-face-rolling-eyes",
+                desc: "Dry humor with playfully snarky commentary",
+                prefixPool: ["Oh, thrilling question. ", "Let me consult my 100% offline crystal ball... ", "Obviously, ", ""],
+                suffixPool: [" You're welcome, by the way.", ""],
+                unknownMsg: (q) => `Shockingly, I don't know EVERYTHING in the universe yet—including "${q}". Care to enlighten me by replying with the answer, or are you going to keep it a secret?`,
+                learnedMsg: (q, a) => `Well, look at you being a teacher. Fine, I saved "${a}" for "${q}" in my permanent memory.`
+            },
+            educational: {
+                name: "Educational",
+                icon: "fa-graduation-cap",
+                desc: "Structured, professor-like explanations",
+                prefixPool: ["Let's examine this topic: ", "Key Fact: ", "From an educational standpoint: ", ""],
+                suffixPool: [" Feel free to ask a follow-up question on this subject!", ""],
+                unknownMsg: (q) => `That topic ("${q}") is not yet in my curriculum. Would you like to teach me the answer so we can add it to the permanent study guide? Reply with the answer or click "Teach Me".`,
+                learnedMsg: (q, a) => `Excellent lesson! I have cataloged "${q}" -> "${a}" along with alternative question patterns for future recall.`
+            }
+        };
+
+        /********************************************************************
+         * 4. STORAGE KEYS & APPLICATION STATE
+         ********************************************************************/
+        const STORAGE_KEYS = {
+            KNOWLEDGE: "teachbot_v1_knowledge_db",
+            CHATS: "teachbot_v1_conversations",
+            ACTIVE_CHAT: "teachbot_v1_active_chat_id",
+            MEMORY: "teachbot_v1_user_memory",
+            SETTINGS: "teachbot_v1_settings"
+        };
+
+        let knowledgeDB = [];
+        let conversations = [];
+        let activeChatId = null;
+        let userMemory = {
+            userName: "",
+            customInstructions: "",
+            facts: {} // key -> value
+        };
+        let appSettings = {
+            personality: "friendly",
+            autoTeachMode: true,
+            showMatchBadges: true,
+            typingAnimation: true,
+            lightMode: false,
+            fuzzyThreshold: 0.58
+        };
+
+        // Tracks conversational teaching state per session
+        let pendingTeachQuestion = null;
+        let currentSourceTab = "index.html";
+
+        /********************************************************************
+         * 5. INITIALIZATION & LOCALSTORAGE PERSISTENCE
+         ********************************************************************/
+        window.addEventListener("DOMContentLoaded", () => {
+            loadAllStateFromStorage();
+            applyThemeSettings();
+            renderSettingsPersonalityCards();
+            syncSettingsUI();
+            renderChatList();
+            renderActiveChat();
+            updateSidebarCounters();
+
+            // Keyboard shortcut Alt+N for New Chat
+            window.addEventListener("keydown", (e) => {
+                if (e.altKey && e.key.toLowerCase() === "n") {
+                    e.preventDefault();
+                    createNewChat();
+                }
+            });
+        });
+
+        function loadAllStateFromStorage() {
+            // 1. Load Knowledge DB
+            try {
+                const rawKB = localStorage.getItem(STORAGE_KEYS.KNOWLEDGE);
+                if (rawKB) {
+                    const parsed = JSON.parse(rawKB);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        knowledgeDB = parsed;
+                    } else {
+                        knowledgeDB = JSON.parse(JSON.stringify(STARTER_KNOWLEDGE_DB));
+                        saveKnowledgeToStorage();
+                    }
+                } else {
+                    knowledgeDB = JSON.parse(JSON.stringify(STARTER_KNOWLEDGE_DB));
+                    saveKnowledgeToStorage();
+                }
+            } catch (e) {
+                console.error("Failed to load Knowledge DB, using starter DB:", e);
+                knowledgeDB = JSON.parse(JSON.stringify(STARTER_KNOWLEDGE_DB));
+            }
+
+            // 2. Load User Memory
+            try {
+                const rawMem = localStorage.getItem(STORAGE_KEYS.MEMORY);
+                if (rawMem) {
+                    userMemory = Object.assign({ userName: "", customInstructions: "", facts: {} }, JSON.parse(rawMem));
+                }
+            } catch (e) {
+                console.error("Error loading user memory:", e);
+            }
+
+            // 3. Load Settings
+            try {
+                const rawSet = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+                if (rawSet) {
+                    appSettings = Object.assign(appSettings, JSON.parse(rawSet));
+                }
+            } catch (e) {
+                console.error("Error loading settings:", e);
+            }
+
+            // 4. Load Conversations
+            try {
+                const rawChats = localStorage.getItem(STORAGE_KEYS.CHATS);
+                if (rawChats) {
+                    conversations = JSON.parse(rawChats);
+                }
+                activeChatId = localStorage.getItem(STORAGE_KEYS.ACTIVE_CHAT);
+                if (!Array.isArray(conversations) || conversations.length === 0) {
+                    createFirstDefaultChat();
+                } else if (!conversations.some(c => c.id === activeChatId)) {
+                    activeChatId = conversations[0].id;
+                }
+            } catch (e) {
+                createFirstDefaultChat();
+            }
+        }
+
+        function saveKnowledgeToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.KNOWLEDGE, JSON.stringify(knowledgeDB));
+                updateSidebarCounters();
+            } catch (e) {
+                showToast("Storage warning: Could not save to localStorage", "error");
+            }
+        }
+
+        function saveChatsToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.CHATS, JSON.stringify(conversations));
+                if (activeChatId) {
+                    localStorage.setItem(STORAGE_KEYS.ACTIVE_CHAT, activeChatId);
+                }
+            } catch (e) {
+                console.error("Failed to save chats:", e);
+            }
+        }
+
+        function saveMemoryToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.MEMORY, JSON.stringify(userMemory));
+                updateSidebarCounters();
+            } catch (e) {
+                console.error("Failed to save memory:", e);
+            }
+        }
+
+        function saveSettingsToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(appSettings));
+            } catch (e) {
+                console.error("Failed to save settings:", e);
+            }
+        }
+
+        /********************************************************************
+         * 6. SECURITY: STRICT HTML ESCAPING (Prevents XSS / Injection)
+         ********************************************************************/
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        /********************************************************************
+         * 7. ADVANCED RULE-BASED NLP & MATCHING ENGINE (ZERO AI)
+         * Pipeline:
+         *  Step A: Direct Conversational Teaching Interception
+         *  Step B: User Memory Fact Extraction & Recall ("My name is Gary")
+         *  Step C: Safe Built-in Arithmetic Expression Solver
+         *  Step D: Pronoun & Entity Context Resolution ("he" -> "Elon Musk")
+         *  Step E: Priority Rule Matching (Exact -> Regex -> Synonym/Keyword -> Fuzzy Levenshtein)
+         ********************************************************************/
+
+        // Normalize string: lowercase, trim, strip punctuation, expand contractions
+        function normalizeText(input) {
+            if (!input) return "";
+            let s = String(input).toLowerCase().trim();
+            s = s.replace(/what's/g, "what is")
+                 .replace(/who's/g, "who is")
+                 .replace(/where's/g, "where is")
+                 .replace(/how's/g, "how is")
+                 .replace(/i'm/g, "i am")
+                 .replace(/don't/g, "do not")
+                 .replace(/can't/g, "cannot")
+                 .replace(/won't/g, "will not")
+                 .replace(/[^\w\s]/g, " ")
+                 .replace(/\s+/g, " ")
+                 .trim();
+            return s;
+        }
+
+        // Convert common conversational prefixes ("tell me the capital of france" -> "capital of france")
+        function extractCoreQuery(normStr) {
+            return normStr
+                .replace(/^(please\s+)?(can you\s+|could you\s+)?(tell me\s+|explain\s+|do you know\s+)?(what is\s+|what are\s+|who is\s+|who was\s+|where is\s+)?(the\s+)?/i, "")
+                .trim();
+        }
+
+        // Tokenize and canonicalize synonyms
+        function tokenizeWithSynonyms(text) {
+            const norm = normalizeText(text);
+            if (!norm) return [];
+            return norm.split(" ")
+                .filter(w => w.length > 1 && !STOP_WORDS.has(w))
+                .map(w => SYNONYM_MAP[w] || w);
+        }
+
+        // Levenshtein Edit Distance for Fuzzy Matching & Typo Tolerance
+        function levenshteinDistance(a, b) {
+            if (a.length === 0) return b.length;
+            if (b.length === 0) return a.length;
+            const matrix = [];
+            for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+            for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1, // substitution
+                            matrix[i][j - 1] + 1,     // insertion
+                            matrix[i - 1][j] + 1      // deletion
+                        );
+                    }
+                }
+            }
+            return matrix[b.length][a.length];
+        }
+
+        function stringSimilarity(str1, str2) {
+            const s1 = normalizeText(str1);
+            const s2 = normalizeText(str2);
+            if (!s1 || !s2) return 0;
+            if (s1 === s2) return 1.0;
+            const maxLen = Math.max(s1.length, s2.length);
+            if (maxLen === 0) return 1.0;
+            const dist = levenshteinDistance(s1, s2);
+            return (maxLen - dist) / maxLen;
+        }
+
+        // Word-level fuzzy similarity (forgives minor spelling mistakes in individual words)
+        function tokenSetSimilarity(tokensA, tokensB) {
+            if (tokensA.length === 0 || tokensB.length === 0) return 0;
+            let matchedWeight = 0;
+            for (const tA of tokensA) {
+                let bestWordSim = 0;
+                for (const tB of tokensB) {
+                    if (tA === tB) {
+                        bestWordSim = 1.0;
+                        break;
+                    }
+                    if (tA.length >= 4 && tB.length >= 4) {
+                        const sim = stringSimilarity(tA, tB);
+                        if (sim >= 0.75 && sim > bestWordSim) {
+                            bestWordSim = sim;
+                        }
+                    }
+                }
+                matchedWeight += bestWordSim;
+            }
+            // Dice / Overlap hybrid score
+            const recall = matchedWeight / tokensB.length;
+            const precision = matchedWeight / tokensA.length;
+            return (recall * 0.65) + (precision * 0.35);
+        }
+
+        // Resolve pronouns (he, she, it, they, that, his, her) using current conversation's active entity
+        function resolveContextualPronouns(rawInput, currentEntity) {
+            if (!currentEntity) return { resolvedText: rawInput, usedContext: false };
+            // Only replace standalone pronouns when the user query doesn't already contain the entity
+            if (rawInput.toLowerCase().includes(currentEntity.toLowerCase())) {
+                return { resolvedText: rawInput, usedContext: false };
+            }
+            const pronounRegex = /\b(he|she|it|they|him|her|his|their|that|there)\b/gi;
+            if (pronounRegex.test(rawInput)) {
+                const replaced = rawInput.replace(pronounRegex, currentEntity);
+                return { resolvedText: replaced, usedContext: true };
+            }
+            return { resolvedText: rawInput, usedContext: false };
+        }
+
+        // Check User Memory & Personal Fact Patterns ("My name is Gary", "What is my name?", etc.)
+        function checkMemoryPatterns(rawInput) {
+            const clean = rawInput.trim();
+
+            // 1. "My name is [Name]" or "Call me [Name]"
+            const nameSetMatch = clean.match(/^(?:hi\s+|hello\s+)?(?:my name is|i am called|please call me|call me)\s+([a-zA-Z0-9 _-]{2,30})[.!?]*$/i);
+            if (nameSetMatch) {
+                const newName = nameSetMatch[1].trim();
+                userMemory.userName = newName;
+                saveMemoryToStorage();
+                return {
+                    matched: true,
+                    answer: `Nice to meet you, ${newName}! I've saved your name in my personal memory.`,
+                    method: "Memory (Saved Name)",
+                    confidence: 1.0,
+                    entity: newName
+                };
+            }
+
+            // 2. "What is my name?" / "Do you know my name?" / "Who am I?"
+            if (/^(what is my name|what's my name|do you know my name|who am i|tell me my name)[?!.]*$/i.test(clean)) {
+                if (userMemory.userName) {
+                    return {
+                        matched: true,
+                        answer: `Your name is ${userMemory.userName}!`,
+                        method: "Memory (Name Recall)",
+                        confidence: 1.0,
+                        entity: userMemory.userName
+                    };
+                } else {
+                    return {
+                        matched: true,
+                        answer: "You haven't told me your name yet! Try saying 'My name is Gary' and I'll remember it.",
+                        method: "Memory Check",
+                        confidence: 1.0,
+                        entity: ""
+                    };
+                }
+            }
+
+            // 3. "My favorite [X] is [Y]"
+            const favSetMatch = clean.match(/^my favo(?:u)?rite\s+([a-zA-Z0-9 ]{2,25})\s+is\s+(.+?)[.!?]*$/i);
+            if (favSetMatch) {
+                const topic = favSetMatch[1].trim().toLowerCase();
+                const val = favSetMatch[2].trim();
+                userMemory.facts[`favorite ${topic}`] = val;
+                saveMemoryToStorage();
+                return {
+                    matched: true,
+                    answer: `Got it! I'll remember that your favorite ${topic} is ${val}.`,
+                    method: "Memory (Saved Preference)",
+                    confidence: 1.0,
+                    entity: val
+                };
+            }
+
+            // 4. "What is my favorite [X]?"
+            const favGetMatch = clean.match(/^(?:what is|what's|tell me) my favo(?:u)?rite\s+([a-zA-Z0-9 ]{2,25})[?!.]*$/i);
+            if (favGetMatch) {
+                const topic = favGetMatch[1].trim().toLowerCase();
+                const stored = userMemory.facts[`favorite ${topic}`];
+                if (stored) {
+                    return {
+                        matched: true,
+                        answer: `Your favorite ${topic} is ${stored}!`,
+                        method: "Memory (Preference Recall)",
+                        confidence: 1.0,
+                        entity: stored
+                    };
+                }
+            }
+
+            // 5. "I like [X]" or "I love [X]" or "I live in [X]"
+            const factSetMatch = clean.match(/^i (like|love|live in|work as|study)\s+(.+?)[.!?]*$/i);
+            if (factSetMatch) {
+                const verb = factSetMatch[1].toLowerCase();
+                const val = factSetMatch[2].trim();
+                userMemory.facts[verb] = val;
+                saveMemoryToStorage();
+                return {
+                    matched: true,
+                    answer: `I've noted that in your personal profile: you ${verb} ${val}!`,
+                    method: "Memory (Saved Fact)",
+                    confidence: 1.0,
+                    entity: val
+                };
+            }
+
+            // 6. "Remember that [X] is [Y]"
+            const remMatch = clean.match(/^remember that\s+(.+?)\s+is\s+(.+?)[.!?]*$/i);
+            if (remMatch) {
+                const key = remMatch[1].trim();
+                const val = remMatch[2].trim();
+                userMemory.facts[key] = val;
+                saveMemoryToStorage();
+                // Also add to Knowledge DB so general questions match it
+                learnNewFactAutomatically(`What is ${key}?`, `${key} is ${val}.`);
+                return {
+                    matched: true,
+                    answer: `I'll remember that ${key} is ${val}! I've added it to both your personal memory and my knowledge base.`,
+                    method: "Memory + Auto-Learn",
+                    confidence: 1.0,
+                    entity: key
+                };
+            }
+
+            // 7. "What do you know about me?" / "What do you remember about me?"
+            if (/^(what do you know about me|what do you remember about me|show my memory|my profile)[?!.]*$/i.test(clean)) {
+                const parts = [];
+                if (userMemory.userName) parts.push(`Your name is **${userMemory.userName}**`);
+                for (const [k, v] of Object.entries(userMemory.facts)) {
+                    parts.push(`${k}: **${v}**`);
+                }
+                if (parts.length === 0) {
+                    return {
+                        matched: true,
+                        answer: "I don't have any personal facts stored about you yet! Try telling me 'My name is Gary' or 'My favorite color is emerald'.",
+                        method: "Memory Summary",
+                        confidence: 1.0,
+                        entity: ""
+                    };
+                }
+                return {
+                    matched: true,
+                    answer: `Here is what I remember about you: ${parts.join("; ")}. You can also edit these anytime in the User Memory tab!`,
+                    method: "Memory Summary",
+                    confidence: 1.0,
+                    entity: userMemory.userName || ""
+                };
+            }
+
+            return { matched: false };
+        }
+
+        // Built-in Safe Arithmetic Calculator ("What is 25 * 4?", "Calculate 120 / 5 + 10")
+        function checkMathExpression(rawInput) {
+            const clean = rawInput.trim().toLowerCase();
+            const mathMatch = clean.match(/^(?:what is|what's|calculate|compute|solve)?\s*([-+]?\d+(?:\.\d+)?(?:\s*[\+\-\*\/\%\^]\s*[-+]?\d+(?:\.\d+)?)+)\s*[?=]*$/);
+            if (!mathMatch) return { matched: false };
+            try {
+                const expr = mathMatch[1].replace(/\^/g, "**");
+                // Strictly allow only digits, operators, decimals, spaces
+                if (!/^[\d\s\+\-\*\/\%\.\(\)]+$/.test(expr)) return { matched: false };
+                const result = Function(`"use strict"; return (${expr})`)();
+                if (typeof result === "number" && isFinite(result)) {
+                    const formatted = Number.isInteger(result) ? result : Number(result.toFixed(6));
+                    return {
+                        matched: true,
+                        answer: `The result of ${mathMatch[1].trim()} is ${formatted}.`,
+                        method: "Math Rule Engine",
+                        confidence: 1.0,
+                        entity: "Mathematics"
+                    };
+                }
+            } catch (e) {
+                return { matched: false };
+            }
+            return { matched: false };
+        }
+
+        // Main Rule-Based Knowledge Lookup
+        function findBestKnowledgeMatch(userQuery, activeEntity = "") {
+            // 1. Check Memory Patterns first
+            const memCheck = checkMemoryPatterns(userQuery);
+            if (memCheck.matched) return memCheck;
+
+            // 2. Check Math Solver
+            const mathCheck = checkMathExpression(userQuery);
+            if (mathCheck.matched) return mathCheck;
+
+            // 3. Pronoun / Context Resolution
+            const contextResolution = resolveContextualPronouns(userQuery, activeEntity);
+            const queriesToTest = [userQuery];
+            if (contextResolution.usedContext) {
+                queriesToTest.unshift(contextResolution.resolvedText);
+            }
+
+            let bestCandidate = null;
+            let highestScore = 0;
+            let bestMethod = "";
+
+            for (const testQuery of queriesToTest) {
+                const isContextualPass = (testQuery === contextResolution.resolvedText && contextResolution.usedContext);
+                const normQuery = normalizeText(testQuery);
+                const coreQuery = extractCoreQuery(normQuery);
+                const queryTokens = tokenizeWithSynonyms(testQuery);
+
+                for (const entry of knowledgeDB) {
+                    const allEntryQuestions = [entry.question, ...(entry.altQuestions || [])];
+                    const priorityBoost = ((entry.priority || 5) - 5) * 0.012; // subtle tie-breaker
+
+                    // TIER 1: Exact Normalized Phrase Match or Core Phrase Match
+                    for (const qVariant of allEntryQuestions) {
+                        const normVariant = normalizeText(qVariant);
+                        const coreVariant = extractCoreQuery(normVariant);
+
+                        if (normQuery === normVariant || (coreQuery.length >= 4 && coreQuery === coreVariant)) {
+                            const exactScore = 1.0 + priorityBoost;
+                            if (exactScore > highestScore) {
+                                highestScore = exactScore;
+                                bestCandidate = entry;
+                                bestMethod = isContextualPass ? `Context (${activeEntity}) + Exact` : "Exact Phrase Match";
+                            }
+                        }
+                    }
+
+                    // TIER 2: Custom Regular Expression Match (if entry has regex)
+                    if (entry.regex && entry.regex.trim().length > 0) {
+                        try {
+                            const rx = new RegExp(entry.regex, "i");
+                            if (rx.test(testQuery) || rx.test(normQuery)) {
+                                const rxScore = 0.96 + priorityBoost;
+                                if (rxScore > highestScore) {
+                                    highestScore = rxScore;
+                                    bestCandidate = entry;
+                                    bestMethod = isContextualPass ? `Context (${activeEntity}) + Regex` : "Regex Pattern Match";
+                                }
+                            }
+                        } catch (e) {
+                            // Ignore invalid user regex
+                        }
+                    }
+
+                    // TIER 3: Synonym-Normalized Token Overlap & Fuzzy Levenshtein Similarity
+                    for (const qVariant of allEntryQuestions) {
+                        const variantTokens = tokenizeWithSynonyms(qVariant);
+                        const tokenScore = tokenSetSimilarity(queryTokens, variantTokens);
+                        const charSim = stringSimilarity(normQuery, normalizeText(qVariant));
+                        const coreCharSim = (coreQuery.length >= 4)
+                            ? stringSimilarity(coreQuery, extractCoreQuery(normalizeText(qVariant)))
+                            : 0;
+
+                        // Keyword bonus
+                        let keywordBonus = 0;
+                        if (Array.isArray(entry.keywords) && entry.keywords.length > 0 && queryTokens.length > 0) {
+                            const kwHits = entry.keywords.filter(kw => queryTokens.includes(normalizeText(kw))).length;
+                            keywordBonus = (kwHits / entry.keywords.length) * 0.12;
+                        }
+
+                        // Entity continuity bonus
+                        let entityBonus = 0;
+                        if (activeEntity && entry.entity && entry.entity.toLowerCase() === activeEntity.toLowerCase()) {
+                            entityBonus = 0.06;
+                        }
+
+                        const combinedScore = Math.max(
+                            charSim,
+                            coreCharSim * 0.96,
+                            (tokenScore * 0.78) + (Math.max(charSim, coreCharSim) * 0.22)
+                        ) + keywordBonus + entityBonus + priorityBoost;
+
+                        if (combinedScore > highestScore) {
+                            highestScore = combinedScore;
+                            bestCandidate = entry;
+                            if (charSim >= 0.82 || coreCharSim >= 0.85) {
+                                bestMethod = isContextualPass ? `Context (${activeEntity}) + Fuzzy` : `Fuzzy Match (${Math.round(Math.min(0.99, combinedScore) * 100)}%)`;
+                            } else {
+                                bestMethod = isContextualPass ? `Context (${activeEntity}) + Keyword` : `Keyword/Synonym (${Math.round(Math.min(0.99, combinedScore) * 100)}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+
+            const threshold = Number(appSettings.fuzzyThreshold) || 0.58;
+            if (bestCandidate && highestScore >= threshold) {
+                const answersPool = Array.isArray(bestCandidate.answers) && bestCandidate.answers.length > 0
+                    ? bestCandidate.answers
+                    : ["No response text configured."];
+                const chosenAnswer = answersPool[Math.floor(Math.random() * answersPool.length)];
+                return {
+                    matched: true,
+                    entry: bestCandidate,
+                    answer: chosenAnswer,
+                    method: bestMethod,
+                    confidence: Math.min(1, highestScore),
+                    entity: bestCandidate.entity || activeEntity
+                };
+            }
+
+            return {
+                matched: false,
+                confidence: highestScore
+            };
+        }
+
+        // Format response with selected personality & custom user instructions
+        function styleResponseWithPersonality(rawAnswer, isFactualMatch = true) {
+            const p = PERSONALITIES[appSettings.personality] || PERSONALITIES.friendly;
+            let output = rawAnswer;
+
+            if (isFactualMatch && appSettings.personality !== "professional") {
+                const prefix = p.prefixPool[Math.floor(Math.random() * p.prefixPool.length)];
+                const suffix = p.suffixPool[Math.floor(Math.random() * p.suffixPool.length)];
+                // Avoid double greeting if the response is already a greeting
+                if (!/^(hello|hi|hey|goodbye|see you|you're very welcome)/i.test(rawAnswer)) {
+                    output = `${prefix}${rawAnswer}${suffix}`;
+                }
+            }
+
+            if (userMemory.customInstructions && userMemory.customInstructions.trim()) {
+                // Honor simple user instructions like calling them by a title
+                if (userMemory.userName && !output.includes(userMemory.userName) && Math.random() < 0.35) {
+                    output = `${userMemory.userName}, ${output.charAt(0).toLowerCase() + output.slice(1)}`;
+                }
+            }
+            return output;
+        }
+
+        /********************************************************************
+         * 8. AUTOMATIC SELF-LEARNING GENERATOR
+         * When user teaches:
+         *   User: "What is the capital of France?"
+         *   Bot: "I don't know the answer. Can you teach me?"
+         *   User: "Paris."
+         * Automatically synthesizes natural answers ("The capital of France is Paris." + "Paris.")
+         * and alternative question variations ("Tell me the capital of France", etc.)!
+         ********************************************************************/
+        function generateSmartLessonFromQuestionAndAnswer(rawQuestion, rawUserAnswer) {
+            const cleanQ = rawQuestion.trim();
+            const cleanA = rawUserAnswer.trim().replace(/[.]+$/, "");
+            const altQuestions = new Set();
+            const answers = new Set([rawUserAnswer.trim()]);
+            let detectedEntity = "";
+            let category = "General Knowledge";
+
+            // Pattern: "What is the [X] of [Y]?" -> e.g. "What is the capital of France?"
+            const whatIsOfMatch = cleanQ.match(/^(?:what|which)\s+(?:is|are)\s+the\s+([a-zA-Z0-9 ]+?)\s+of\s+([a-zA-Z0-9 ]+?)[?!.]*$/i);
+            if (whatIsOfMatch) {
+                const prop = whatIsOfMatch[1].trim();
+                const subj = whatIsOfMatch[2].trim();
+                detectedEntity = subj;
+                altQuestions.add(`Tell me the ${prop} of ${subj}`);
+                altQuestions.add(`${subj} ${prop}`);
+                altQuestions.add(`What is ${subj}'s ${prop}?`);
+                altQuestions.add(`Do you know the ${prop} of ${subj}?`);
+                if (cleanA.split(" ").length <= 5 && !cleanA.toLowerCase().includes(prop.toLowerCase())) {
+                    answers.unshift ? null : null;
+                    const fullSentence = `The ${prop.toLowerCase()} of ${subj} is ${cleanA}.`;
+                    return buildKnowledgeEntryObject(cleanQ, Array.from(altQuestions), [fullSentence, rawUserAnswer.trim()], guessCategory(cleanQ), detectedEntity);
+                }
+            }
+
+            // Pattern: "Who is/was [X]?" or "What is [X]?"
+            const whoWhatMatch = cleanQ.match(/^(who|what)\s+(is|was|are)\s+([a-zA-Z0-9 _-]+?)[?!.]*$/i);
+            if (whoWhatMatch) {
+                const wh = whoWhatMatch[1].toLowerCase();
+                const verb = whoWhatMatch[2].toLowerCase();
+                const subj = whoWhatMatch[3].trim();
+                detectedEntity = subj.replace(/^the\s+/i, "");
+                altQuestions.add(`Tell me about ${detectedEntity}`);
+                altQuestions.add(`Explain ${detectedEntity}`);
+                altQuestions.add(`Do you know ${wh} ${subj} ${verb}?`);
+                if (cleanA.split(" ").length <= 6 && !cleanA.toLowerCase().startsWith(detectedEntity.toLowerCase())) {
+                    const fullSentence = `${detectedEntity} ${verb} ${cleanA}.`;
+                    return buildKnowledgeEntryObject(cleanQ, Array.from(altQuestions), [fullSentence, rawUserAnswer.trim()], guessCategory(cleanQ), detectedEntity);
+                }
+            }
+
+            // Generic alternative questions
+            const core = extractCoreQuery(normalizeText(cleanQ));
+            if (core && core.length > 3) {
+                altQuestions.add(`Tell me ${core}`);
+                altQuestions.add(`What is ${core}?`);
+            }
+
+            return buildKnowledgeEntryObject(cleanQ, Array.from(altQuestions), Array.from(answers), guessCategory(cleanQ), detectedEntity);
+        }
+
+        function guessCategory(text) {
+            const t = text.toLowerCase();
+            if (/(capital|country|city|ocean|mountain|river|continent|located)/.test(t)) return "Geography";
+            if (/(planet|atom|chemical|speed|biology|physics|dna|gravity|science)/.test(t)) return "Science";
+            if (/(javascript|python|code|function|variable|programming|html|css)/.test(t)) return "Programming";
+            if (/(cpu|ram|computer|laptop|windows|linux|browser)/.test(t)) return "Computers";
+            if (/(founder|ceo|company|elon|microsoft|apple|google|tech)/.test(t)) return "Technology";
+            if (/(war|king|president|ancient|century|history|apollo)/.test(t)) return "History";
+            if (/(math|formula|calculate|pi|triangle|number|equation)/.test(t)) return "Mathematics";
+            if (/(soccer|football|basketball|olympics|player|sport)/.test(t)) return "Sports";
+            return "General Knowledge";
+        }
+
+        function buildKnowledgeEntryObject(question, altQuestions, answers, category, entity, priority = 8, regex = "") {
+            const kw = tokenizeWithSynonyms(question).slice(0, 8);
+            return {
+                id: "kb_user_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+                question: question.trim(),
+                altQuestions: altQuestions.filter(q => q && q.toLowerCase() !== question.trim().toLowerCase()),
+                answers: answers.filter(Boolean),
+                category: category || "General Knowledge",
+                keywords: kw,
+                entity: entity || "",
+                regex: regex || "",
+                priority: Number(priority) || 8,
+                isUserTaught: true,
+                createdAt: new Date().toISOString()
+            };
+        }
+
+        // Inserts or merges a newly learned entry into knowledgeDB without creating duplicates
+        function upsertKnowledgeEntry(newEntry) {
+            const normNew = normalizeText(newEntry.question);
+            const existingIdx = knowledgeDB.findIndex(item => {
+                if (item.id === newEntry.id) return true;
+                if (normalizeText(item.question) === normNew) return true;
+                return (item.altQuestions || []).some(alt => normalizeText(alt) === normNew);
+            });
+
+            if (existingIdx !== -1) {
+                const existing = knowledgeDB[existingIdx];
+                // Merge answers and alternative questions cleanly
+                const mergedAlts = new Set([...(existing.altQuestions || []), ...(newEntry.altQuestions || [])]);
+                if (normalizeText(existing.question) !== normNew) {
+                    mergedAlts.add(newEntry.question);
+                }
+                const mergedAnswers = new Set([...(newEntry.answers || []), ...(existing.answers || [])]);
+                existing.altQuestions = Array.from(mergedAlts);
+                existing.answers = Array.from(mergedAnswers);
+                existing.category = newEntry.category || existing.category;
+                existing.entity = newEntry.entity || existing.entity;
+                existing.keywords = Array.from(new Set([...(existing.keywords || []), ...(newEntry.keywords || [])]));
+                existing.isUserTaught = true;
+                existing.priority = Math.max(existing.priority || 5, newEntry.priority || 8);
+                saveKnowledgeToStorage();
+                return existing;
+            } else {
+                knowledgeDB.unshift(newEntry);
+                saveKnowledgeToStorage();
+                return newEntry;
+            }
+        }
+
+        function learnNewFactAutomatically(question, answer) {
+            const smartEntry = generateSmartLessonFromQuestionAndAnswer(question, answer);
+            return upsertKnowledgeEntry(smartEntry);
+        }
+
+        /********************************************************************
+         * 9. CONVERSATION & MESSAGE FLOW CONTROLLER
+         ********************************************************************/
+        function createFirstDefaultChat() {
+            const newChat = {
+                id: "chat_" + Date.now(),
+                title: "Welcome Conversation",
+                createdAt: Date.now(),
+                activeEntity: "",
+                messages: [
+                    {
+                        id: "msg_welcome",
+                        role: "bot",
+                        text: "Hello! I'm **TeachBot**, a 100% offline, self-learning rule-based chatbot.\n\nTry asking me:\n- **\"Who is Elon Musk?\"** and then follow up with **\"What companies does he own?\"** (Context memory)\n- **\"What is the capital of France?\"** (I don't know this yet—teach me **\"Paris\"** and then ask **\"Tell me the capital of France\"**!)\n- **\"My name is Gary\"** and then **\"What is my name?\"**",
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        method: "System Welcome",
+                        personality: appSettings.personality
+                    }
+                ]
+            };
+            conversations = [newChat];
+            activeChatId = newChat.id;
+            saveChatsToStorage();
+        }
+
+        function getActiveChat() {
+            return conversations.find(c => c.id === activeChatId) || conversations[0];
+        }
+
+        function createNewChat() {
+            cancelPendingTeach();
+            const newChat = {
+                id: "chat_" + Date.now(),
+                title: "New Chat",
+                createdAt: Date.now(),
+                activeEntity: "",
+                messages: [
+                    {
+                        id: "msg_" + Date.now(),
+                        role: "bot",
+                        text: "Started a fresh conversation! All your previously taught knowledge and personal memory remain intact. What would you like to ask or teach me?",
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        method: "New Session",
+                        personality: appSettings.personality
+                    }
+                ]
+            };
+            conversations.unshift(newChat);
+            activeChatId = newChat.id;
+            saveChatsToStorage();
+            switchView("chat");
+            renderChatList();
+            renderActiveChat();
+            toggleMobileSidebar(false);
+            document.getElementById("chat-input").focus();
+        }
+
+        function selectChat(chatId) {
+            cancelPendingTeach();
+            activeChatId = chatId;
+            saveChatsToStorage();
+            switchView("chat");
+            renderChatList();
+            renderActiveChat();
+            toggleMobileSidebar(false);
+        }
+
+        function deleteChat(chatId, event) {
+            if (event) event.stopPropagation();
+            conversations = conversations.filter(c => c.id !== chatId);
+            if (conversations.length === 0) {
+                createFirstDefaultChat();
+            } else if (activeChatId === chatId) {
+                activeChatId = conversations[0].id;
+            }
+            saveChatsToStorage();
+            renderChatList();
+            renderActiveChat();
+            showToast("Conversation deleted (Knowledge DB untouched)", "info");
+        }
+
+        function clearCurrentChatMessages() {
+            const chat = getActiveChat();
+            if (!chat) return;
+            cancelPendingTeach();
+            chat.messages = [];
+            chat.activeEntity = "";
+            saveChatsToStorage();
+            renderActiveChat();
+            showToast("Cleared current chat messages", "info");
+        }
+
+        function clearAllChatsConfirm() {
+            openConfirmModal(
+                "Clear All Chat History?",
+                "This will delete all conversation threads. Your learned Knowledge Database and Personal Memory will NOT be deleted.",
+                () => {
+                    conversations = [];
+                    createFirstDefaultChat();
+                    renderChatList();
+                    renderActiveChat();
+                    showToast("All chat history cleared", "info");
+                }
+            );
+        }
+
+        function handleInputKeydown(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleChatSubmit(e);
+            }
+        }
+
+        function autoResizeTextarea(el) {
+            el.style.height = "auto";
+            el.style.height = Math.min(el.scrollHeight, 150) + "px";
+        }
+
+        function sendSuggestedPrompt(text) {
+            const input = document.getElementById("chat-input");
+            input.value = text;
+            handleChatSubmit(new Event("submit"));
+        }
+
+        function handleChatSubmit(e) {
+            if (e) e.preventDefault();
+            const inputEl = document.getElementById("chat-input");
+            const userText = inputEl.value.trim();
+            if (!userText) return;
+
+            inputEl.value = "";
+            inputEl.style.height = "auto";
+
+            const chat = getActiveChat();
+            const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            // Append User Message
+            chat.messages.push({
+                id: "msg_u_" + Date.now(),
+                role: "user",
+                text: userText,
+                timestamp: nowTime
+            });
+
+            // Update Chat Title if it's still "New Chat" or "Welcome Conversation"
+            if ((chat.title === "New Chat" || chat.title === "Welcome Conversation") && !pendingTeachQuestion) {
+                chat.title = userText.slice(0, 34) + (userText.length > 34 ? "..." : "");
+            }
+
+            saveChatsToStorage();
+            renderChatList();
+            renderActiveChat();
+
+            // Process Bot Response (with optional typing animation)
+            if (appSettings.typingAnimation) {
+                showTypingIndicator();
+                setTimeout(() => {
+                    hideTypingIndicator();
+                    processUserMessageAndReply(userText, chat);
+                }, 420);
+            } else {
+                processUserMessageAndReply(userText, chat);
+            }
+        }
+
+        function processUserMessageAndReply(userText, chat) {
+            const p = PERSONALITIES[appSettings.personality] || PERSONALITIES.friendly;
+            const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            // CASE 1: Bot is currently waiting for the user to teach the answer to `pendingTeachQuestion`
+            if (pendingTeachQuestion) {
+                const lower = userText.toLowerCase().trim();
+                if (lower === "skip" || lower === "cancel" || lower === "no" || lower === "nevermind") {
+                    const skippedQ = pendingTeachQuestion;
+                    cancelPendingTeach();
+                    chat.messages.push({
+                        id: "msg_b_" + Date.now(),
+                        role: "bot",
+                        text: `No problem! I skipped learning "${skippedQ}". What else can I help you with?`,
+                        timestamp: nowTime,
+                        method: "Teaching Cancelled",
+                        personality: appSettings.personality
+                    });
+                    saveChatsToStorage();
+                    renderActiveChat();
+                    return;
+                }
+
+                // Teach the bot with the user's reply!
+                const qToLearn = pendingTeachQuestion;
+                const learnedEntry = learnNewFactAutomatically(qToLearn, userText);
+                cancelPendingTeach();
+
+                if (learnedEntry.entity) {
+                    chat.activeEntity = learnedEntry.entity;
+                }
+
+                const primaryConfirmation = p.learnedMsg(qToLearn, learnedEntry.answers[0]);
+                chat.messages.push({
+                    id: "msg_b_" + Date.now(),
+                    role: "bot",
+                    text: primaryConfirmation,
+                    timestamp: nowTime,
+                    method: "Self-Learned & Saved",
+                    learnedEntryId: learnedEntry.id,
+                    personality: appSettings.personality
+                });
+
+                document.getElementById("engine-last-match-info").textContent = `Learned: "${qToLearn}"`;
+                saveChatsToStorage();
+                renderActiveChat();
+                showToast("New knowledge saved to localStorage!", "success");
+                return;
+            }
+
+            // CASE 2: Standard Rule-Based Matching Pipeline
+            const matchResult = findBestKnowledgeMatch(userText, chat.activeEntity || "");
+
+            if (matchResult.matched) {
+                if (matchResult.entity) {
+                    chat.activeEntity = matchResult.entity;
+                }
+                const finalReply = styleResponseWithPersonality(matchResult.answer, true);
+                chat.messages.push({
+                    id: "msg_b_" + Date.now(),
+                    role: "bot",
+                    text: finalReply,
+                    timestamp: nowTime,
+                    method: matchResult.method,
+                    matchedEntryId: matchResult.entry ? matchResult.entry.id : null,
+                    personality: appSettings.personality
+                });
+                document.getElementById("engine-last-match-info").textContent = `Match: ${matchResult.method}`;
+            } else {
+                // Unknown answer — Never pretend to know!
+                const unknownReply = p.unknownMsg(userText);
+                if (appSettings.autoTeachMode) {
+                    setPendingTeachQuestion(userText);
+                }
+                chat.messages.push({
+                    id: "msg_b_" + Date.now(),
+                    role: "bot",
+                    text: unknownReply,
+                    timestamp: nowTime,
+                    method: "Unknown (Ready to Learn)",
+                    unknownQuestion: userText,
+                    personality: appSettings.personality
+                });
+                document.getElementById("engine-last-match-info").textContent = `No Match -> Teaching Prompt`;
+            }
+
+            saveChatsToStorage();
+            renderActiveChat();
+        }
+
+        function setPendingTeachQuestion(questionStr) {
+            pendingTeachQuestion = questionStr;
+            const banner = document.getElementById("teaching-mode-banner");
+            const qLabel = document.getElementById("teaching-banner-question");
+            const inputEl = document.getElementById("chat-input");
+            qLabel.textContent = `"${questionStr}"`;
+            banner.classList.remove("hidden");
+            inputEl.placeholder = `Type the correct answer for "${questionStr}" (or type 'skip')...`;
+        }
+
+        function cancelPendingTeach() {
+            pendingTeachQuestion = null;
+            const banner = document.getElementById("teaching-mode-banner");
+            const inputEl = document.getElementById("chat-input");
+            if (banner) banner.classList.add("hidden");
+            if (inputEl) inputEl.placeholder = "Ask TeachBot anything, or teach me a new fact...";
+        }
+
+        function openTeachModalWithPending() {
+            const q = pendingTeachQuestion || "";
+            cancelPendingTeach();
+            openTeachModal(null, q);
+        }
+
+        /********************************************************************
+         * 10. UI RENDERING: CHAT STREAM, SIDEBAR & TYPING ANIMATION
+         ********************************************************************/
+        function formatSafeMarkdown(escapedText) {
+            // Convert **bold** and line breaks safely after HTML escaping
+            return escapedText
+                .replace(/\*\*(.+?)\*\*/g, "<strong class='text-white font-semibold'>$1</strong>")
+                .replace(/\n/g, "<br>");
+        }
+
+        function renderActiveChat() {
+            const container = document.getElementById("chat-messages-container");
+            const chat = getActiveChat();
+            if (!chat) return;
+
+            // Update Context Pill in Header
+            const ctxPill = document.getElementById("active-context-pill");
+            const ctxName = document.getElementById("active-context-name");
+            const navBadgeCtx = document.getElementById("nav-badge-context");
+            if (chat.activeEntity) {
+                ctxPill.classList.remove("hidden");
+                ctxName.textContent = chat.activeEntity;
+                navBadgeCtx.classList.remove("hidden");
+            } else {
+                ctxPill.classList.add("hidden");
+                navBadgeCtx.classList.add("hidden");
+            }
+
+            if (chat.messages.length === 0) {
+                container.innerHTML = `
+                    <div class="max-w-2xl mx-auto my-12 text-center space-y-4">
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto text-2xl shadow-lg">
+                            <i class="fa-solid fa-brain"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">How can I help or learn from you today?</h2>
+                        <p class="text-xs sm:text-sm text-gray-400 max-w-md mx-auto">
+                            Every response comes strictly from JavaScript rule matching, fuzzy search, conversation context, and knowledge you teach me.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            const htmlParts = chat.messages.map((msg) => {
+                const isUser = msg.role === "user";
+                const safeBody = formatSafeMarkdown(escapeHTML(msg.text));
+
+                if (isUser) {
+                    return `
+                        <div class="max-w-3xl mx-auto flex justify-end msg-animate">
+                            <div class="max-w-[85%] sm:max-w-[75%] bg-[#2f2f2f] border border-[#3d3d3d] text-gray-100 rounded-2xl rounded-tr-xs px-4 py-3 shadow">
+                                <div class="text-xs sm:text-sm leading-relaxed break-words">${safeBody}</div>
+                                <div class="mt-1.5 flex items-center justify-end gap-2 text-[10px] text-gray-400">
+                                    <span>${escapeHTML(msg.timestamp || "")}</span>
+                                    <button onclick="copyMessageText('${escapeHTML(msg.id)}')" title="Copy message" class="hover:text-white transition">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const pInfo = PERSONALITIES[msg.personality || appSettings.personality] || PERSONALITIES.friendly;
+                    const badgeHTML = (appSettings.showMatchBadges && msg.method)
+                        ? `<span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#2a2a2a] text-emerald-400 border border-[#3a3a3a]">${escapeHTML(msg.method)}</span>`
+                        : "";
+
+                    const teachActionBtn = msg.unknownQuestion
+                        ? `<button onclick="openTeachModalFromUnknown('${escapeHTML(msg.id)}')" class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold transition">
+                               <i class="fa-solid fa-graduation-cap"></i> Teach Me This Answer
+                           </button>`
+                        : "";
+
+                    const editLearnedBtn = (msg.matchedEntryId || msg.learnedEntryId)
+                        ? `<button onclick="openTeachModal('${escapeHTML(msg.matchedEntryId || msg.learnedEntryId)}')" title="Edit this Knowledge Rule" class="hover:text-amber-300 transition flex items-center gap-1">
+                               <i class="fa-solid fa-pen-to-square"></i> Edit Rule
+                           </button>`
+                        : "";
+
+                    return `
+                        <div class="max-w-3xl mx-auto flex items-start gap-3 msg-animate">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white shrink-0 mt-0.5 shadow">
+                                <i class="fa-solid ${pInfo.icon} text-xs"></i>
+                            </div>
+                            <div class="flex-1 min-w-0 bg-[#1b1b1b] border border-[#2e2e2e] rounded-2xl rounded-tl-xs px-4 py-3 shadow">
+                                <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-semibold text-white">TeachBot</span>
+                                        <span class="text-[10px] text-gray-400">(${escapeHTML(pInfo.name)})</span>
+                                    </div>
+                                    ${badgeHTML}
+                                </div>
+                                <div class="text-xs sm:text-sm text-gray-200 leading-relaxed break-words">${safeBody}</div>
+                                ${teachActionBtn}
+                                <div class="mt-2.5 pt-2 border-t border-[#282828] flex items-center justify-between text-[11px] text-gray-400">
+                                    <span>${escapeHTML(msg.timestamp || "")}</span>
+                                    <div class="flex items-center gap-3">
+                                        ${editLearnedBtn}
+                                        <button onclick="copyMessageText('${escapeHTML(msg.id)}')" class="hover:text-white transition flex items-center gap-1">
+                                            <i class="fa-regular fa-copy"></i> Copy
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            container.innerHTML = htmlParts.join("");
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const container = document.getElementById("chat-messages-container");
+            const existing = document.getElementById("typing-indicator-row");
+            if (existing) return;
+            const div = document.createElement("div");
+            div.id = "typing-indicator-row";
+            div.className = "max-w-3xl mx-auto flex items-center gap-3 msg-animate";
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white shrink-0">
+                    <i class="fa-solid fa-brain text-xs"></i>
+                </div>
+                <div class="bg-[#1b1b1b] border border-[#2e2e2e] rounded-2xl px-4 py-3 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 typing-dot"></span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 typing-dot"></span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 typing-dot"></span>
+                    <span class="text-[11px] text-gray-400 ml-2">Matching rules...</span>
+                </div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const existing = document.getElementById("typing-indicator-row");
+            if (existing) existing.remove();
+        }
+
+        function renderChatList() {
+            const listEl = document.getElementById("chat-history-list");
+            const filter = (document.getElementById("chat-search-input")?.value || "").toLowerCase().trim();
+
+            const filtered = conversations.filter(c => {
+                if (!filter) return true;
+                if (c.title.toLowerCase().includes(filter)) return true;
+                return c.messages.some(m => m.text.toLowerCase().includes(filter));
+            });
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `<div class="text-xs text-gray-500 text-center py-4">No matching chats</div>`;
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(c => {
+                const isActive = c.id === activeChatId;
+                return `
+                    <div onclick="selectChat('${escapeHTML(c.id)}')" class="group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition ${isActive ? 'bg-[#2a2b32] text-white font-medium border border-[#3a3a3a]' : 'text-gray-400 hover:bg-[#222] hover:text-gray-200'}">
+                        <div class="flex items-center gap-2.5 truncate pr-2">
+                            <i class="fa-regular fa-message text-[11px] ${isActive ? 'text-emerald-400' : 'text-gray-500'}"></i>
+                            <span class="truncate">${escapeHTML(c.title)}</span>
+                        </div>
+                        <button onclick="deleteChat('${escapeHTML(c.id)}', event)" title="Delete conversation" class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 p-1 rounded transition">
+                            <i class="fa-solid fa-trash-can text-[11px]"></i>
+                        </button>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function copyMessageText(msgId) {
+            const chat = getActiveChat();
+            if (!chat) return;
+            const msg = chat.messages.find(m => m.id === msgId);
+            if (!msg) return;
+            copyTextToClipboard(msg.text);
+            showToast("Message copied to clipboard", "success");
+        }
+
+        function copyTextToClipboard(text) {
+            const temp = document.createElement("textarea");
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand("copy");
+            document.body.removeChild(temp);
+        }
+
+        /********************************************************************
+         * 11. KNOWLEDGE MANAGEMENT DASHBOARD FUNCTIONS
+         ********************************************************************/
+        function renderKnowledgeDashboard() {
+            // Update statistics
+            const totalEntries = knowledgeDB.length;
+            let totalQ = 0;
+            let totalA = 0;
+            let userTaughtCount = 0;
+            const catSet = new Set();
+
+            knowledgeDB.forEach(item => {
+                totalQ += 1 + (item.altQuestions ? item.altQuestions.length : 0);
+                totalA += (item.answers ? item.answers.length : 0);
+                if (item.isUserTaught) userTaughtCount++;
+                if (item.category) catSet.add(item.category);
+            });
+
+            document.getElementById("stat-total-entries").textContent = totalEntries;
+            document.getElementById("stat-total-questions").textContent = totalQ;
+            document.getElementById("stat-total-answers").textContent = totalA;
+            document.getElementById("stat-user-taught").textContent = userTaughtCount;
+            document.getElementById("stat-categories").textContent = catSet.size;
+
+            // Populate Category Filter Dropdown
+            const catSelect = document.getElementById("kb-category-filter");
+            const currentCat = catSelect.value || "all";
+            const sortedCats = Array.from(catSet).sort();
+            catSelect.innerHTML = `<option value="all">All Categories (${sortedCats.length})</option>` +
+                sortedCats.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join("");
+            catSelect.value = sortedCats.includes(currentCat) ? currentCat : "all";
+
+            renderKnowledgeTable();
+        }
+
+        function renderKnowledgeTable() {
+            const query = (document.getElementById("kb-search-input")?.value || "").toLowerCase().trim();
+            const catFilter = document.getElementById("kb-category-filter")?.value || "all";
+            const srcFilter = document.getElementById("kb-source-filter")?.value || "all";
+            const grid = document.getElementById("kb-entries-grid");
+
+            const filtered = knowledgeDB.filter(item => {
+                if (catFilter !== "all" && item.category !== catFilter) return false;
+                if (srcFilter === "user" && !item.isUserTaught) return false;
+                if (srcFilter === "builtin" && item.isUserTaught) return false;
+                if (!query) return true;
+
+                const hay = [
+                    item.question,
+                    ...(item.altQuestions || []),
+                    ...(item.answers || []),
+                    item.category || "",
+                    item.entity || "",
+                    ...(item.keywords || [])
+                ].join(" ").toLowerCase();
+
+                return hay.includes(query);
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full bg-[#2a2a2a] border border-[#383838] rounded-2xl p-8 text-center space-y-3">
+                        <i class="fa-solid fa-magnifying-glass text-2xl text-gray-500"></i>
+                        <div class="text-sm font-semibold text-white">No matching knowledge entries found</div>
+                        <p class="text-xs text-gray-400">Try clearing your search filters or click "Add Knowledge Entry" to teach a new rule.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(item => {
+                const badgeClass = item.isUserTaught
+                    ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
+                    : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                const badgeLabel = item.isUserTaught ? "User Taught" : "Built-in DB";
+
+                const altListHTML = (item.altQuestions && item.altQuestions.length > 0)
+                    ? `<div class="mt-2 flex flex-wrap gap-1">
+                        ${item.altQuestions.slice(0, 4).map(alt => `<span class="text-[11px] bg-[#1d1d1d] text-gray-300 px-2 py-0.5 rounded border border-[#333]">${escapeHTML(alt)}</span>`).join("")}
+                        ${item.altQuestions.length > 4 ? `<span class="text-[11px] text-gray-400 px-1">+${item.altQuestions.length - 4} more</span>` : ""}
+                       </div>`
+                    : `<div class="mt-1 text-[11px] text-gray-500 italic">No alternative questions added</div>`;
+
+                const entityBadge = item.entity
+                    ? `<span class="text-[10px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded">Entity: ${escapeHTML(item.entity)}</span>`
+                    : "";
+
+                return `
+                    <div class="bg-[#2a2a2a] border border-[#383838] hover:border-[#4c4c4c] rounded-2xl p-4 flex flex-col justify-between space-y-3 transition">
+                        <div class="space-y-2">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded border ${badgeClass}">${badgeLabel}</span>
+                                    <span class="text-[10px] bg-[#1e1e1e] text-gray-300 px-2 py-0.5 rounded border border-[#383838]">${escapeHTML(item.category || "General")}</span>
+                                    ${entityBadge}
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="testKnowledgeInChat('${escapeHTML(item.id)}')" title="Ask this in Chat" class="p-1.5 rounded-lg bg-[#1f1f1f] hover:bg-emerald-600/20 text-gray-300 hover:text-emerald-300 text-xs transition">
+                                        <i class="fa-solid fa-play"></i>
+                                    </button>
+                                    <button onclick="openTeachModal('${escapeHTML(item.id)}')" title="Edit Entry" class="p-1.5 rounded-lg bg-[#1f1f1f] hover:bg-amber-500/20 text-gray-300 hover:text-amber-300 text-xs transition">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button onclick="deleteKnowledgeEntry('${escapeHTML(item.id)}')" title="Delete Entry" class="p-1.5 rounded-lg bg-[#1f1f1f] hover:bg-red-500/20 text-gray-300 hover:text-red-400 text-xs transition">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="text-sm font-bold text-white">${escapeHTML(item.question)}</div>
+                                ${altListHTML}
+                            </div>
+
+                            <div class="bg-[#1e1e1e] p-3 rounded-xl border border-[#333] space-y-1">
+                                <div class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
+                                    Answer Variations (${(item.answers || []).length})
+                                </div>
+                                <div class="text-xs text-gray-200 leading-relaxed">${escapeHTML((item.answers && item.answers[0]) || "")}</div>
+                                ${(item.answers && item.answers.length > 1) ? `<div class="text-[11px] text-emerald-400">+ ${item.answers.length - 1} additional response variation(s)</div>` : ""}
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-[#343434] flex items-center justify-between text-[11px] text-gray-400">
+                            <span>Keywords: ${escapeHTML((item.keywords || []).slice(0, 5).join(", ") || "auto")}</span>
+                            <span class="font-mono">Priority: ${item.priority || 5}</span>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function testKnowledgeInChat(entryId) {
+            const entry = knowledgeDB.find(e => e.id === entryId);
+            if (!entry) return;
+            switchView("chat");
+            sendSuggestedPrompt(entry.question);
+        }
+
+        function deleteKnowledgeEntry(entryId) {
+            const entry = knowledgeDB.find(e => e.id === entryId);
+            if (!entry) return;
+            openConfirmModal(
+                "Delete Knowledge Lesson?",
+                `Are you sure you want to delete "${entry.question}" and all its alternative phrasings from the database?`,
+                () => {
+                    knowledgeDB = knowledgeDB.filter(e => e.id !== entryId);
+                    saveKnowledgeToStorage();
+                    renderKnowledgeDashboard();
+                    showToast("Knowledge entry deleted", "info");
+                }
+            );
+        }
+
+        /********************************************************************
+         * 12. TEACH / EDIT KNOWLEDGE MODAL LOGIC
+         ********************************************************************/
+        function openTeachModalFromUnknown(msgId) {
+            const chat = getActiveChat();
+            const msg = chat ? chat.messages.find(m => m.id === msgId) : null;
+            const q = msg && msg.unknownQuestion ? msg.unknownQuestion : (pendingTeachQuestion || "");
+            cancelPendingTeach();
+            openTeachModal(null, q);
+        }
+
+        function openTeachModal(entryId = null, prefillQuestion = "") {
+            const modal = document.getElementById("teach-modal");
+            const titleEl = document.getElementById("teach-modal-title");
+            const idInput = document.getElementById("teach-entry-id");
+            const qInput = document.getElementById("teach-primary-question");
+            const altInput = document.getElementById("teach-alt-questions");
+            const ansInput = document.getElementById("teach-answers");
+            const catInput = document.getElementById("teach-category");
+            const entInput = document.getElementById("teach-entity");
+            const prioInput = document.getElementById("teach-priority");
+            const kwInput = document.getElementById("teach-keywords");
+            const rxInput = document.getElementById("teach-regex");
+
+            if (entryId) {
+                const entry = knowledgeDB.find(e => e.id === entryId);
+                if (entry) {
+                    titleEl.textContent = "Edit Knowledge Entry";
+                    idInput.value = entry.id;
+                    qInput.value = entry.question || "";
+                    altInput.value = (entry.altQuestions || []).join("\n");
+                    ansInput.value = (entry.answers || []).join("\n");
+                    catInput.value = entry.category || "General Knowledge";
+                    entInput.value = entry.entity || "";
+                    prioInput.value = entry.priority || 8;
+                    kwInput.value = (entry.keywords || []).join(", ");
+                    rxInput.value = entry.regex || "";
+                }
+            } else {
+                titleEl.textContent = "Teach TeachBot New Knowledge";
+                idInput.value = "";
+                qInput.value = prefillQuestion || "";
+                altInput.value = "";
+                ansInput.value = "";
+                catInput.value = prefillQuestion ? guessCategory(prefillQuestion) : "General Knowledge";
+                entInput.value = "";
+                prioInput.value = 8;
+                kwInput.value = prefillQuestion ? tokenizeWithSynonyms(prefillQuestion).join(", ") : "";
+                rxInput.value = "";
+            }
+
+            modal.classList.remove("hidden");
+            setTimeout(() => {
+                if (prefillQuestion) ansInput.focus();
+                else qInput.focus();
+            }, 50);
+        }
+
+        function closeTeachModal() {
+            document.getElementById("teach-modal").classList.add("hidden");
+        }
+
+        function saveTeachModalForm(e) {
+            e.preventDefault();
+            const idVal = document.getElementById("teach-entry-id").value.trim();
+            const qVal = document.getElementById("teach-primary-question").value.trim();
+            const altLines = document.getElementById("teach-alt-questions").value
+                .split("\n").map(s => s.trim()).filter(Boolean);
+            const ansLines = document.getElementById("teach-answers").value
+                .split("\n").map(s => s.trim()).filter(Boolean);
+            const catVal = document.getElementById("teach-category").value;
+            const entVal = document.getElementById("teach-entity").value.trim();
+            const prioVal = Number(document.getElementById("teach-priority").value) || 8;
+            const kwList = document.getElementById("teach-keywords").value
+                .split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+            const rxVal = document.getElementById("teach-regex").value.trim();
+
+            if (!qVal || ansLines.length === 0) {
+                showToast("Please provide both a question and at least one answer.", "error");
+                return;
+            }
+
+            // Validate optional regex
+            if (rxVal) {
+                try {
+                    new RegExp(rxVal, "i");
+                } catch (err) {
+                    showToast("Invalid Regular Expression syntax: " + err.message, "error");
+                    return;
+                }
+            }
+
+            if (idVal) {
+                // Update existing entry
+                const idx = knowledgeDB.findIndex(item => item.id === idVal);
+                if (idx !== -1) {
+                    knowledgeDB[idx] = {
+                        ...knowledgeDB[idx],
+                        question: qVal,
+                        altQuestions: altLines,
+                        answers: ansLines,
+                        category: catVal,
+                        entity: entVal,
+                        priority: prioVal,
+                        keywords: kwList.length > 0 ? kwList : tokenizeWithSynonyms(qVal),
+                        regex: rxVal,
+                        isUserTaught: true
+                    };
+                    saveKnowledgeToStorage();
+                    showToast("Knowledge entry updated!", "success");
+                }
+            } else {
+                // Generate automatic alternative phrasings if user didn't supply any
+                const autoEntry = generateSmartLessonFromQuestionAndAnswer(qVal, ansLines[0]);
+                const combinedAlts = Array.from(new Set([...altLines, ...(autoEntry.altQuestions || [])]));
+                const newEntry = {
+                    id: "kb_user_" + Date.now(),
+                    question: qVal,
+                    altQuestions: combinedAlts,
+                    answers: ansLines,
+                    category: catVal,
+                    entity: entVal || autoEntry.entity || "",
+                    priority: prioVal,
+                    keywords: kwList.length > 0 ? kwList : tokenizeWithSynonyms(qVal),
+                    regex: rxVal,
+                    isUserTaught: true,
+                    createdAt: new Date().toISOString()
+                };
+                upsertKnowledgeEntry(newEntry);
+                showToast("New lesson learned & saved permanently!", "success");
+            }
+
+            closeTeachModal();
+            renderKnowledgeDashboard();
+            renderActiveChat();
+        }
+
+        /********************************************************************
+         * 13. IMPORT / EXPORT KNOWLEDGE DATABASE (JSON & TXT)
+         ********************************************************************/
+        function exportKnowledgeDatabase(format = "json") {
+            if (format === "json") {
+                const dataStr = JSON.stringify(knowledgeDB, null, 2);
+                downloadFileBlob(dataStr, `teachbot-knowledge-${new Date().toISOString().slice(0, 10)}.json`, "application/json");
+                showToast(`Exported ${knowledgeDB.length} knowledge entries as JSON`, "success");
+            } else {
+                const lines = knowledgeDB.map(item => {
+                    const alts = (item.altQuestions || []).length > 0 ? `\nALT: ${item.altQuestions.join(" | ")}` : "";
+                    const ans = (item.answers || []).join(" | ");
+                    return `Q: ${item.question}${alts}\nA: ${ans}\nCATEGORY: ${item.category || "General Knowledge"}\nENTITY: ${item.entity || ""}\n`;
+                }).join("\n---\n\n");
+                downloadFileBlob(lines, `teachbot-knowledge-${new Date().toISOString().slice(0, 10)}.txt`, "text/plain");
+                showToast(`Exported ${knowledgeDB.length} knowledge entries as TXT`, "success");
+            }
+        }
+
+        function triggerImportFile() {
+            document.getElementById("kb-import-file").click();
+        }
+
+        function handleKnowledgeFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                let importedCount = 0;
+
+                try {
+                    if (file.name.toLowerCase().endsWith(".json")) {
+                        const parsed = JSON.parse(content);
+                        const arr = Array.isArray(parsed) ? parsed : (parsed.knowledge || []);
+                        if (!Array.isArray(arr)) throw new Error("JSON root must be an array of knowledge objects.");
+
+                        arr.forEach(raw => {
+                            if (raw && typeof raw.question === "string" && raw.question.trim()) {
+                                const answers = Array.isArray(raw.answers)
+                                    ? raw.answers.map(String)
+                                    : (typeof raw.answer === "string" ? [raw.answer] : []);
+                                if (answers.length > 0) {
+                                    const cleanEntry = buildKnowledgeEntryObject(
+                                        raw.question,
+                                        Array.isArray(raw.altQuestions) ? raw.altQuestions.map(String) : [],
+                                        answers,
+                                        raw.category || "General Knowledge",
+                                        raw.entity || "",
+                                        raw.priority || 7,
+                                        raw.regex || ""
+                                    );
+                                    upsertKnowledgeEntry(cleanEntry);
+                                    importedCount++;
+                                }
+                            }
+                        });
+                    } else {
+                        // Parse TXT format: supports "Q: ... \n A: ..." or "question | answer" per line
+                        const blocks = content.split(/\n---+\n|\r?\n\r?\n/);
+                        blocks.forEach(block => {
+                            const qMatch = block.match(/^Q:\s*(.+)$/im);
+                            const aMatch = block.match(/^A:\s*(.+)$/im);
+                            if (qMatch && aMatch) {
+                                const altMatch = block.match(/^ALT:\s*(.+)$/im);
+                                const catMatch = block.match(/^CATEGORY:\s*(.+)$/im);
+                                const entMatch = block.match(/^ENTITY:\s*(.+)$/im);
+                                const alts = altMatch ? altMatch[1].split("|").map(s => s.trim()).filter(Boolean) : [];
+                                const ans = aMatch[1].split("|").map(s => s.trim()).filter(Boolean);
+                                const entry = buildKnowledgeEntryObject(
+                                    qMatch[1].trim(),
+                                    alts,
+                                    ans,
+                                    catMatch ? catMatch[1].trim() : "General Knowledge",
+                                    entMatch ? entMatch[1].trim() : ""
+                                );
+                                upsertKnowledgeEntry(entry);
+                                importedCount++;
+                            } else {
+                                // Fallback: line by line "Question | Answer"
+                                block.split(/\r?\n/).forEach(line => {
+                                    if (line.includes("|")) {
+                                        const [qPart, aPart] = line.split("|");
+                                        if (qPart && aPart && qPart.trim() && aPart.trim()) {
+                                            learnNewFactAutomatically(qPart.trim(), aPart.trim());
+                                            importedCount++;
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+
+                    renderKnowledgeDashboard();
+                    showToast(`Successfully imported & validated ${importedCount} knowledge entries!`, "success");
+                } catch (err) {
+                    showToast("Import error: " + err.message, "error");
+                }
+                event.target.value = "";
+            };
+            reader.readAsText(file);
+        }
+
+        function downloadFileBlob(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        /********************************************************************
+         * 14. USER MEMORY VIEW & SETTINGS VIEW CONTROLLERS
+         ********************************************************************/
+        function renderMemoryView() {
+            document.getElementById("mem-user-name").value = userMemory.userName || "";
+            document.getElementById("mem-custom-instructions").value = userMemory.customInstructions || "";
+
+            const chat = getActiveChat();
+            document.getElementById("mem-context-entity").textContent = (chat && chat.activeEntity) ? chat.activeEntity : "None";
+            const lastBotMsg = chat ? [...chat.messages].reverse().find(m => m.role === "bot" && m.matchedEntryId) : null;
+            const lastEntry = lastBotMsg ? knowledgeDB.find(e => e.id === lastBotMsg.matchedEntryId) : null;
+            document.getElementById("mem-context-category").textContent = lastEntry ? lastEntry.category : "None";
+            document.getElementById("mem-context-qid").textContent = lastEntry ? lastEntry.id : "None";
+
+            const factsContainer = document.getElementById("user-facts-list");
+            const entries = Object.entries(userMemory.facts || {});
+            if (entries.length === 0) {
+                factsContainer.innerHTML = `
+                    <div class="col-span-full text-xs text-gray-400 bg-[#1d1d1d] p-4 rounded-xl border border-[#333] text-center">
+                        No personal preferences stored yet. Tell TeachBot <em>"My favorite language is JavaScript"</em> or add one above!
+                    </div>
+                `;
+                return;
+            }
+
+            factsContainer.innerHTML = entries.map(([k, v]) => `
+                <div class="flex items-center justify-between bg-[#1d1d1d] px-3.5 py-2.5 rounded-xl border border-[#343434] text-xs">
+                    <div class="truncate pr-2">
+                        <span class="text-gray-400 capitalize">${escapeHTML(k)}:</span>
+                        <strong class="text-white ml-1">${escapeHTML(v)}</strong>
+                    </div>
+                    <button onclick="deleteUserFact('${escapeHTML(k)}')" class="text-gray-500 hover:text-red-400 p-1 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            `).join("");
+        }
+
+        function saveUserMemoryProfile() {
+            userMemory.userName = document.getElementById("mem-user-name").value.trim();
+            userMemory.customInstructions = document.getElementById("mem-custom-instructions").value.trim();
+            saveMemoryToStorage();
+            renderMemoryView();
+            showToast("Personal memory profile saved!", "success");
+        }
+
+        function addManualUserFact() {
+            const kEl = document.getElementById("new-user-fact-key");
+            const vEl = document.getElementById("new-user-fact-val");
+            const k = kEl.value.trim();
+            const v = vEl.value.trim();
+            if (!k || !v) {
+                showToast("Enter both a topic and a value", "error");
+                return;
+            }
+            userMemory.facts[k.toLowerCase()] = v;
+            kEl.value = "";
+            vEl.value = "";
+            saveMemoryToStorage();
+            renderMemoryView();
+            showToast("Fact added to personal memory", "success");
+        }
+
+        function deleteUserFact(key) {
+            delete userMemory.facts[key];
+            saveMemoryToStorage();
+            renderMemoryView();
+        }
+
+        function resetUserMemoryConfirm() {
+            openConfirmModal(
+                "Reset Personal User Memory?",
+                "This will clear your stored name, custom instructions, and personal facts. Your Knowledge Database will remain intact.",
+                () => {
+                    userMemory = { userName: "", customInstructions: "", facts: {} };
+                    saveMemoryToStorage();
+                    renderMemoryView();
+                    showToast("User memory reset", "info");
+                }
+            );
+        }
+
+        // Settings & Personalities
+        function changePersonality(newPersonality) {
+            if (!PERSONALITIES[newPersonality]) return;
+            appSettings.personality = newPersonality;
+            saveSettingsToStorage();
+            syncSettingsUI();
+            renderSettingsPersonalityCards();
+            const p = PERSONALITIES[newPersonality];
+            showToast(`Personality switched to ${p.name}`, "info");
+        }
+
+        function renderSettingsPersonalityCards() {
+            const grid = document.getElementById("settings-personality-grid");
+            if (!grid) return;
+            grid.innerHTML = Object.entries(PERSONALITIES).map(([key, p]) => {
+                const active = appSettings.personality === key;
+                return `
+                    <div onclick="changePersonality('${key}')" class="p-3.5 rounded-xl border cursor-pointer transition ${active ? 'bg-emerald-600/20 border-emerald-500 text-white' : 'bg-[#1e1e1e] border-[#383838] text-gray-300 hover:border-gray-500'}">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-semibold text-xs flex items-center gap-2">
+                                <i class="fa-solid ${p.icon} ${active ? 'text-emerald-400' : 'text-gray-400'}"></i>
+                                ${escapeHTML(p.name)}
+                            </span>
+                            ${active ? '<i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>' : ''}
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-snug">${escapeHTML(p.desc)}</p>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function syncSettingsUI() {
+            const headerSelect = document.getElementById("header-personality-select");
+            const pIcon = document.getElementById("personality-icon");
+            if (headerSelect) headerSelect.value = appSettings.personality;
+            if (pIcon && PERSONALITIES[appSettings.personality]) {
+                pIcon.className = `fa-solid ${PERSONALITIES[appSettings.personality].icon} text-emerald-400 text-xs mr-1.5`;
+            }
+
+            const autoTeachEl = document.getElementById("setting-auto-teach");
+            const badgesEl = document.getElementById("setting-show-badges");
+            const typingEl = document.getElementById("setting-typing-anim");
+            const lightEl = document.getElementById("setting-light-mode");
+            const threshEl = document.getElementById("setting-fuzzy-threshold");
+            const threshLbl = document.getElementById("setting-threshold-label");
+
+            if (autoTeachEl) autoTeachEl.checked = !!appSettings.autoTeachMode;
+            if (badgesEl) badgesEl.checked = !!appSettings.showMatchBadges;
+            if (typingEl) typingEl.checked = !!appSettings.typingAnimation;
+            if (lightEl) lightEl.checked = !!appSettings.lightMode;
+            if (threshEl) threshEl.value = appSettings.fuzzyThreshold || 0.58;
+            if (threshLbl) threshLbl.textContent = `${appSettings.fuzzyThreshold || 0.58}`;
+        }
+
+        function updateSettingsFromUI() {
+            appSettings.autoTeachMode = document.getElementById("setting-auto-teach").checked;
+            appSettings.showMatchBadges = document.getElementById("setting-show-badges").checked;
+            appSettings.typingAnimation = document.getElementById("setting-typing-anim").checked;
+            appSettings.lightMode = document.getElementById("setting-light-mode").checked;
+            appSettings.fuzzyThreshold = parseFloat(document.getElementById("setting-fuzzy-threshold").value);
+
+            document.getElementById("setting-threshold-label").textContent = `${appSettings.fuzzyThreshold}`;
+            if (!appSettings.autoTeachMode) cancelPendingTeach();
+
+            saveSettingsToStorage();
+            applyThemeSettings();
+            renderActiveChat();
+            showToast("Engine settings updated", "info");
+        }
+
+        function applyThemeSettings() {
+            const htmlEl = document.documentElement;
+            if (appSettings.lightMode) {
+                htmlEl.classList.remove("dark");
+                htmlEl.classList.add("light");
+                document.body.style.filter = "invert(0.93) hue-rotate(180deg)";
+            } else {
+                htmlEl.classList.remove("light");
+                htmlEl.classList.add("dark");
+                document.body.style.filter = "none";
+            }
+        }
+
+        function resetKnowledgeToFactoryConfirm() {
+            openConfirmModal(
+                "Restore Starter Knowledge Database?",
+                "This will reset the Knowledge Database back to the built-in starter facts and remove custom taught entries. Make sure you export a JSON backup first if needed!",
+                () => {
+                    knowledgeDB = JSON.parse(JSON.stringify(STARTER_KNOWLEDGE_DB));
+                    saveKnowledgeToStorage();
+                    renderKnowledgeDashboard();
+                    showToast("Starter Knowledge Database restored", "info");
+                }
+            );
+        }
+
+        /********************************************************************
+         * 15. SOURCE FILES EXPORTER (index.html, style.css, script.js, knowledge.json)
+         ********************************************************************/
+        function generateVirtualSourceFile(filename) {
+            if (filename === "knowledge.json") {
+                return JSON.stringify(knowledgeDB, null, 2);
+            }
+            if (filename === "style.css") {
+                return document.getElementById("teachbot-custom-styles").textContent.trim();
+            }
+            if (filename === "script.js") {
+                return document.getElementById("teachbot-core-script").textContent.trim();
+            }
+            if (filename === "index.html") {
+                // Produce a clean standalone index.html that links style.css and script.js
+                const docClone = document.documentElement.cloneNode(true);
+                const styleTag = docClone.querySelector("#teachbot-custom-styles");
+                if (styleTag) {
+                    const linkEl = document.createElement("link");
+                    linkEl.rel = "stylesheet";
+                    linkEl.href = "style.css";
+                    styleTag.replaceWith(linkEl);
+                }
+                const scriptTag = docClone.querySelector("#teachbot-core-script");
+                if (scriptTag) {
+                    const extScript = document.createElement("script");
+                    extScript.src = "script.js";
+                    scriptTag.replaceWith(extScript);
+                }
+                return "<!DOCTYPE html>\n" + docClone.outerHTML;
+            }
+            return "";
+        }
+
+        function selectSourceTab(filename) {
+            currentSourceTab = filename;
+            ["index.html", "style.css", "script.js", "knowledge.json"].forEach(f => {
+                const btn = document.getElementById("src-tab-" + f);
+                if (!btn) return;
+                if (f === filename) {
+                    btn.className = "px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium bg-emerald-600/20 text-emerald-300 border border-emerald-500/30";
+                } else {
+                    btn.className = "px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium bg-[#2a2a2a] text-gray-400 hover:text-white";
+                }
+            });
+
+            const code = generateVirtualSourceFile(filename);
+            document.getElementById("source-viewer-filename").textContent = filename;
+            document.getElementById("source-viewer-size").textContent = (new Blob([code]).size / 1024).toFixed(1) + " KB";
+            document.getElementById("source-viewer-code").textContent = code;
+        }
+
+        function downloadSelectedSourceFile() {
+            const code = generateVirtualSourceFile(currentSourceTab);
+            const mime = currentSourceTab.endsWith(".json") ? "application/json" : "text/plain";
+            downloadFileBlob(code, currentSourceTab, mime);
+            showToast(`Downloaded ${currentSourceTab}`, "success");
+        }
+
+        function copySelectedSourceFile() {
+            const code = generateVirtualSourceFile(currentSourceTab);
+            copyTextToClipboard(code);
+            showToast(`Copied ${currentSourceTab} to clipboard!`, "success");
+        }
+
+        /********************************************************************
+         * 16. NAVIGATION, COUNTERS, MODALS & TOASTS
+         ********************************************************************/
+        function switchView(viewName) {
+            const views = ["chat", "knowledge", "memory", "settings", "source"];
+            const titles = {
+                chat: "TeachBot Conversation",
+                knowledge: "Knowledge Management Dashboard",
+                memory: "User Memory & Context",
+                settings: "Rule Engine & Personality Settings",
+                source: "Modular Source Files (HTML / CSS / JS / JSON)"
+            };
+
+            views.forEach(v => {
+                const sec = document.getElementById("view-" + v);
+                const nav = document.getElementById("nav-" + v);
+                if (sec) sec.classList.toggle("hidden", v !== viewName);
+                if (nav) {
+                    if (v === viewName) {
+                        nav.className = "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 transition";
+                    } else {
+                        nav.className = "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-gray-300 hover:bg-[#262626] transition";
+                    }
+                }
+            });
+
+            document.getElementById("current-view-title").textContent = titles[viewName] || "TeachBot";
+
+            if (viewName === "knowledge") renderKnowledgeDashboard();
+            if (viewName === "memory") renderMemoryView();
+            if (viewName === "settings") {
+                renderSettingsPersonalityCards();
+                syncSettingsUI();
+            }
+            if (viewName === "source") selectSourceTab(currentSourceTab);
+            toggleMobileSidebar(false);
+        }
+
+        function updateSidebarCounters() {
+            const kbCountEl = document.getElementById("sidebar-kb-count");
+            const memCountEl = document.getElementById("sidebar-mem-count");
+            const footerUser = document.getElementById("footer-user-label");
+            const footerLearned = document.getElementById("footer-learned-badge");
+
+            if (kbCountEl) kbCountEl.textContent = knowledgeDB.length;
+            const memFactsCount = (userMemory.userName ? 1 : 0) + Object.keys(userMemory.facts || {}).length;
+            if (memCountEl) memCountEl.textContent = memFactsCount;
+
+            if (footerUser) {
+                footerUser.innerHTML = `<i class="fa-regular fa-user mr-1"></i>${escapeHTML(userMemory.userName || "Guest User")}`;
+            }
+            if (footerLearned) {
+                const taughtCount = knowledgeDB.filter(k => k.isUserTaught).length;
+                footerLearned.textContent = `${taughtCount} user-taught`;
+            }
+        }
+
+        function toggleMobileSidebar(open) {
+            const sb = document.getElementById("sidebar");
+            const bd = document.getElementById("sidebar-backdrop");
+            if (open) {
+                sb.classList.remove("-translate-x-full");
+                bd.classList.remove("hidden");
+            } else {
+                sb.classList.add("-translate-x-full");
+                bd.classList.add("hidden");
+            }
+        }
+
+        function openConfirmModal(title, desc, onConfirm) {
+            document.getElementById("confirm-modal-title").textContent = title;
+            document.getElementById("confirm-modal-desc").textContent = desc;
+            const btn = document.getElementById("confirm-modal-action-btn");
+            btn.onclick = () => {
+                closeConfirmModal();
+                if (typeof onConfirm === "function") onConfirm();
+            };
+            document.getElementById("confirm-modal").classList.remove("hidden");
+        }
+
+        function closeConfirmModal() {
+            document.getElementById("confirm-modal").classList.add("hidden");
+        }
+
+        function showToast(message, type = "info") {
+            const container = document.getElementById("toast-container");
+            const toast = document.createElement("div");
+            const colors = {
+                success: "bg-emerald-950/90 border-emerald-500/50 text-emerald-200",
+                error: "bg-red-950/90 border-red-500/50 text-red-200",
+                info: "bg-[#262626]/95 border-[#444] text-gray-200"
+            };
+            const icons = {
+                success: "fa-circle-check text-emerald-400",
+                error: "fa-circle-exclamation text-red-400",
+                info: "fa-circle-info text-sky-400"
+            };
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-2.5 rounded-xl border shadow-xl text-xs font-medium msg-animate ${colors[type] || colors.info}`;
+            toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${escapeHTML(message)}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                toast.style.transition = "opacity 0.25s ease";
+                setTimeout(() => toast.remove(), 260);
+            }, 3200);
+        }
+    </script>
+</body>
+</html>
